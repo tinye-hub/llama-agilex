@@ -1,0 +1,19 @@
+# system info fp32ToFp16 on 2026.06.01.12:13:15
+system_info:
+name,value
+DEVICE,A5EB013BB23BE4SCS
+DEVICE_FAMILY,Agilex 5
+GENERATION_ID,0
+#
+#
+# Files generated for fp32ToFp16 on 2026.06.01.12:13:15
+files:
+filepath,kind,attributes,module,is_top
+sim/fp32ToFp16.v,VERILOG,CONTAINS_INLINE_CONFIGURATION,fp32ToFp16,true
+altera_fp_functions_19110/sim/dspba_library_ver.sv,SYSTEM_VERILOG,,fp32ToFp16_altera_fp_functions_19110_qtmnoha,false
+altera_fp_functions_19110/sim/fp32ToFp16_altera_fp_functions_19110_qtmnoha.sv,SYSTEM_VERILOG,,fp32ToFp16_altera_fp_functions_19110_qtmnoha,false
+#
+# Map from instance-path to kind of module
+instances:
+instancePath,module
+fp32ToFp16.fp_functions_0,fp32ToFp16_altera_fp_functions_19110_qtmnoha

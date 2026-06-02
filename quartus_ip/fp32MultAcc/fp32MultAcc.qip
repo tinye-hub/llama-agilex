@@ -1,0 +1,44 @@
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_TOOL_NAME "QsysPrimePro"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_TOOL_VERSION "25.1.1"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_TOOL_VENDOR_NAME "Altera Corporation"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_TOP_LEVEL_COMPONENT_NAME "agilex_native_floating_point_dsp"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name PRE_COMPILED_MODULE "ON"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name OCS_IP_FILE [file join $::quartus(qip_path) "../fp32MultAcc.ip"]
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name OCS_IP_TYPE "agilex_native_floating_point_dsp"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name OCS_IP_VERSION "1.0.0"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name OCS_IP_HASH "sa6roxq"
+set_global_assignment -library "fp32MultAcc" -name SOPCINFO_FILE [file join $::quartus(qip_path) "fp32MultAcc.sopcinfo"]
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name SLD_INFO "QSYS_NAME fp32MultAcc HAS_SOPCINFO 1 GENERATION_ID 0"
+set_global_assignment -library "fp32MultAcc" -name MISC_FILE [file join $::quartus(qip_path) "fp32MultAcc.cmp"]
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_TARGETED_DEVICE_FAMILY "Agilex 5"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_GENERATED_DEVICE_FAMILY "{Agilex 5}"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_QSYS_MODE "STANDALONE"
+set_global_assignment -name SYNTHESIS_ONLY_QIP ON
+set_global_assignment -library "fp32MultAcc" -name MISC_FILE [file join $::quartus(qip_path) "../fp32MultAcc.ip"]
+
+set_global_assignment -entity "fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq" -library "agilex_native_floating_point_dsp_100" -name IP_COMPONENT_NAME "ZnAzMk11bHRBY2NfYWdpbGV4X25hdGl2ZV9mbG9hdGluZ19wb2ludF9kc3BfMTAwX3NhNnJveHE="
+set_global_assignment -entity "fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq" -library "agilex_native_floating_point_dsp_100" -name IP_COMPONENT_DISPLAY_NAME "TmF0aXZlIEZsb2F0aW5nIFBvaW50IERTUCBBZ2lsZXggRlBHQSBJUA=="
+set_global_assignment -entity "fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq" -library "agilex_native_floating_point_dsp_100" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq" -library "agilex_native_floating_point_dsp_100" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq" -library "agilex_native_floating_point_dsp_100" -name IP_COMPONENT_AUTHOR "QWx0ZXJhIENvcnBvcmF0aW9u"
+set_global_assignment -entity "fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq" -library "agilex_native_floating_point_dsp_100" -name IP_COMPONENT_VERSION "MS4wLjA="
+set_global_assignment -entity "fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq" -library "agilex_native_floating_point_dsp_100" -name IP_COMPONENT_DESCRIPTION "VGhlIEFnaWxleCBOYXRpdmUgRmxvYXRpbmcgUG9pbnQgRFNQIG1lZ2FmdW5jdGlvbiBhbGxvd3MgdXNlciB0byBjb25maWd1cmUgYWxsIHRoZSB2YXJpYWJsZSBwcmVjaXNpb24gRFNQIGJsb2NrIG9wZXJhdGlvbiBtb2RlcyBhbmQgZmVhdHVyZXM="
+set_global_assignment -entity "fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq" -library "agilex_native_floating_point_dsp_100" -name IP_COMPONENT_GROUP "RFNQL1ByaW1pdGl2ZSBEU1A="
+set_global_assignment -entity "fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq" -library "agilex_native_floating_point_dsp_100" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL2RvY3MvcHJvZ3JhbW1hYmxlLzgxMzk2OC5odG1s"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_COMPONENT_NAME "ZnAzMk11bHRBY2M="
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_COMPONENT_DISPLAY_NAME "c3lzdGVt"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_COMPONENT_REPORT_HIERARCHY "On"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_COMPONENT_AUTHOR "QWx0ZXJhIENvcnBvcmF0aW9u"
+set_global_assignment -entity "fp32MultAcc" -library "fp32MultAcc" -name IP_COMPONENT_VERSION "MS4w"
+
+
+set_global_assignment -library "agilex_native_floating_point_dsp_100" -name VERILOG_FILE [file join $::quartus(qip_path) "agilex_native_floating_point_dsp_100/synth/fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq.v"]
+set_global_assignment -library "fp32MultAcc" -name VERILOG_FILE [file join $::quartus(qip_path) "synth/fp32MultAcc.v"]
+
+
+set_global_assignment -entity "fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq" -library "agilex_native_floating_point_dsp_100" -name IP_TOOL_NAME "agilex_native_floating_point_dsp"
+set_global_assignment -entity "fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq" -library "agilex_native_floating_point_dsp_100" -name IP_TOOL_VERSION "1.0.0"
+set_global_assignment -entity "fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq" -library "agilex_native_floating_point_dsp_100" -name IP_TOOL_ENV "QsysPrimePro"
+

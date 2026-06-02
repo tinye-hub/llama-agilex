@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<simPackage>
+ <file
+   path="agilex_native_floating_point_dsp_100/sim/fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq.v"
+   type="VERILOG"
+   library="agilex_native_floating_point_dsp_100" />
+ <file
+   path="sim/fp32MultAcc.v"
+   type="VERILOG"
+   library="fp32MultAcc"
+   hasInlineConfiguration="true" />
+ <topLevel name="fp32MultAcc.fp32MultAcc" />
+ <deviceFamily name="agilex5" />
+ <device name="A5EB013BB23BE4SCS" />
+</simPackage>

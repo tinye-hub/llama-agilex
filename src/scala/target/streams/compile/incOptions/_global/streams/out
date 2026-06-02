@@ -1,0 +1,14 @@
+[debug] Created transactional ClassFileManager with tempDir = /userworkqum/tinye/llama-agilex/src/scala/target/scala-2.12/classes.bak
+[debug] About to delete class files:
+[debug] 	RmsNormCore$State$.class
+[debug] 	RmsNormCore$$anon$1.class
+[debug] 	RmsNormCore.class
+[debug] We backup class files:
+[debug] 	RmsNormCore$State$.class
+[debug] 	RmsNormCore$$anon$1.class
+[debug] 	RmsNormCore.class
+[debug] Registering generated classes:
+[debug] 	RmsNormCore$$anon$1.class
+[debug] 	RmsNormCore$State$.class
+[debug] 	RmsNormCore.class
+[debug] Removing the temporary directory used for backing up class files: /userworkqum/tinye/llama-agilex/src/scala/target/scala-2.12/classes.bak

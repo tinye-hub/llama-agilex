@@ -1,0 +1,46 @@
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_TOOL_NAME "QsysPrimePro"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_TOOL_VERSION "25.1.1"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_TOOL_VENDOR_NAME "Altera"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_TOP_LEVEL_COMPONENT_NAME "altera_fp_functions"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name PRE_COMPILED_MODULE "ON"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name OCS_IP_FILE [file join $::quartus(qip_path) "../fp16ToFp32.ip"]
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name OCS_IP_TYPE "altera_fp_functions"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name OCS_IP_VERSION "19.1.10"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name OCS_IP_HASH "jikm5oq"
+set_global_assignment -library "fp16ToFp32" -name SOPCINFO_FILE [file join $::quartus(qip_path) "fp16ToFp32.sopcinfo"]
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name SLD_INFO "QSYS_NAME fp16ToFp32 HAS_SOPCINFO 1 GENERATION_ID 0"
+set_global_assignment -library "fp16ToFp32" -name MISC_FILE [file join $::quartus(qip_path) "fp16ToFp32.cmp"]
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_TARGETED_DEVICE_FAMILY "Agilex 5"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_GENERATED_DEVICE_FAMILY "{Agilex 5}"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_QSYS_MODE "STANDALONE"
+set_global_assignment -name SYNTHESIS_ONLY_QIP ON
+set_global_assignment -library "fp16ToFp32" -name MISC_FILE [file join $::quartus(qip_path) "../fp16ToFp32.ip"]
+
+set_global_assignment -entity "fp16ToFp32_altera_fp_functions_19110_jikm5oq" -library "altera_fp_functions_19110" -name IP_COMPONENT_NAME "ZnAxNlRvRnAzMl9hbHRlcmFfZnBfZnVuY3Rpb25zXzE5MTEwX2ppa201b3E="
+set_global_assignment -entity "fp16ToFp32_altera_fp_functions_19110_jikm5oq" -library "altera_fp_functions_19110" -name IP_COMPONENT_DISPLAY_NAME "RmxvYXRpbmcgUG9pbnQgRnVuY3Rpb25zIEZQR0EgSVA="
+set_global_assignment -entity "fp16ToFp32_altera_fp_functions_19110_jikm5oq" -library "altera_fp_functions_19110" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "fp16ToFp32_altera_fp_functions_19110_jikm5oq" -library "altera_fp_functions_19110" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "fp16ToFp32_altera_fp_functions_19110_jikm5oq" -library "altera_fp_functions_19110" -name IP_COMPONENT_AUTHOR "QWx0ZXJh"
+set_global_assignment -entity "fp16ToFp32_altera_fp_functions_19110_jikm5oq" -library "altera_fp_functions_19110" -name IP_COMPONENT_VERSION "MTkuMS4xMA=="
+set_global_assignment -entity "fp16ToFp32_altera_fp_functions_19110_jikm5oq" -library "altera_fp_functions_19110" -name IP_COMPONENT_DESCRIPTION "QSBjb2xsZWN0aW9uIG9mIGZsb2F0aW5nIHBvaW50IGZ1bmN0aW9uczogYmFzaWMgYXJpdGhtZXRpYyBvcGVyYXRvcnMsIGNvbXBhcmlzb25zLCBjb252ZXJzaW9ucywgZXhwL2xvZy9wb3csIHJvb3RzIGFuZCB0cmlnb25vbWV0cnku"
+set_global_assignment -entity "fp16ToFp32_altera_fp_functions_19110_jikm5oq" -library "altera_fp_functions_19110" -name IP_COMPONENT_GROUP "QmFzaWMgRnVuY3Rpb25zL0FyaXRobWV0aWM="
+set_global_assignment -entity "fp16ToFp32_altera_fp_functions_19110_jikm5oq" -library "altera_fp_functions_19110" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9kb2N1bWVudGF0aW9uL2VpczE0MTA3NjQ4MTg5MjQuaHRtbA=="
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_COMPONENT_NAME "ZnAxNlRvRnAzMg=="
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_COMPONENT_DISPLAY_NAME "c3lzdGVt"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_COMPONENT_REPORT_HIERARCHY "On"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_COMPONENT_AUTHOR "QWx0ZXJh"
+set_global_assignment -entity "fp16ToFp32" -library "fp16ToFp32" -name IP_COMPONENT_VERSION "MS4w"
+
+
+set_global_assignment -library "altera_fp_functions_19110" -name VHDL_FILE [file join $::quartus(qip_path) "altera_fp_functions_19110/synth/dspba_library_package.vhd"]
+set_global_assignment -library "altera_fp_functions_19110" -name VHDL_FILE [file join $::quartus(qip_path) "altera_fp_functions_19110/synth/dspba_library.vhd"]
+set_global_assignment -library "altera_fp_functions_19110" -name VHDL_FILE [file join $::quartus(qip_path) "altera_fp_functions_19110/synth/fp16ToFp32_altera_fp_functions_19110_jikm5oq.vhd"]
+set_global_assignment -library "fp16ToFp32" -name VERILOG_FILE [file join $::quartus(qip_path) "synth/fp16ToFp32.v"]
+
+
+set_global_assignment -entity "fp16ToFp32_altera_fp_functions_19110_jikm5oq" -library "altera_fp_functions_19110" -name IP_TOOL_NAME "altera_fp_functions"
+set_global_assignment -entity "fp16ToFp32_altera_fp_functions_19110_jikm5oq" -library "altera_fp_functions_19110" -name IP_TOOL_VERSION "19.1.10"
+set_global_assignment -entity "fp16ToFp32_altera_fp_functions_19110_jikm5oq" -library "altera_fp_functions_19110" -name IP_TOOL_ENV "QsysPrimePro"
+

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<simPackage>
+ <file
+   path="altera_fp_functions_19110/sim/dspba_library_ver.sv"
+   type="SYSTEM_VERILOG"
+   library="altera_fp_functions_19110" />
+ <file
+   path="altera_fp_functions_19110/sim/fp32ToFp16_altera_fp_functions_19110_qtmnoha.sv"
+   type="SYSTEM_VERILOG"
+   library="altera_fp_functions_19110" />
+ <file
+   path="sim/fp32ToFp16.v"
+   type="VERILOG"
+   library="fp32ToFp16"
+   hasInlineConfiguration="true" />
+ <topLevel name="fp32ToFp16.fp32ToFp16" />
+ <deviceFamily name="agilex5" />
+ <device name="A5EB013BB23BE4SCS" />
+</simPackage>

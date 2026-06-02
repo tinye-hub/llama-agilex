@@ -1,0 +1,104 @@
+/*
+WARNING: Do NOT edit the input and output ports in this file in a text
+editor if you plan to continue editing the block that represents it in
+the Block Editor! File corruption is VERY likely to occur.
+*/
+/*
+Copyright (C) 2025  Altera Corporation. All rights reserved.
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and any partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, the Altera Quartus Prime License Agreement,
+the Altera IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Altera and sold by Altera or its authorized distributors.  Please
+refer to the Altera Software License Subscription Agreements 
+on the Quartus Prime software download page.
+*/
+(header "symbol" (version "1.1"))
+(symbol
+	(rect 0 0 320 312)
+	(text "fp32MultAcc" (rect 121 0 172 12)(font "SansSerif" (font_size 11)))
+	(text "inst" (rect 8 296 20 308)(font "Arial" ))
+	(port
+		(pt 0 76)
+		(input)
+		(text "accumulate" (rect 0 0 44 12)(font "SansSerif" (font_size 8)))
+		(text "accumulate" (rect 4 65 64 76)(font "SansSerif" (font_size 8)))
+		(line (pt 0 76)(pt 102 76)(line_width 1))
+	)
+	(port
+		(pt 0 126)
+		(input)
+		(text "fp32_mult_a[31..0]" (rect 0 0 74 12)(font "SansSerif" (font_size 8)))
+		(text "fp32_mult_a[31..0]" (rect 4 115 112 126)(font "SansSerif" (font_size 8)))
+		(line (pt 0 126)(pt 102 126)(line_width 3))
+	)
+	(port
+		(pt 0 176)
+		(input)
+		(text "fp32_mult_b[31..0]" (rect 0 0 74 12)(font "SansSerif" (font_size 8)))
+		(text "fp32_mult_b[31..0]" (rect 4 165 112 176)(font "SansSerif" (font_size 8)))
+		(line (pt 0 176)(pt 102 176)(line_width 3))
+	)
+	(port
+		(pt 0 226)
+		(input)
+		(text "clk" (rect 0 0 10 12)(font "SansSerif" (font_size 8)))
+		(text "clk" (rect 4 215 22 226)(font "SansSerif" (font_size 8)))
+		(line (pt 0 226)(pt 102 226)(line_width 1))
+	)
+	(port
+		(pt 0 276)
+		(input)
+		(text "ena[2..0]" (rect 0 0 34 12)(font "SansSerif" (font_size 8)))
+		(text "ena[2..0]" (rect 4 265 58 276)(font "SansSerif" (font_size 8)))
+		(line (pt 0 276)(pt 102 276)(line_width 3))
+	)
+	(port
+		(pt 320 76)
+		(output)
+		(text "fp32_result[31..0]" (rect 0 0 68 12)(font "SansSerif" (font_size 8)))
+		(text "fp32_result[31..0]" (rect 236 65 344 76)(font "SansSerif" (font_size 8)))
+		(line (pt 320 76)(pt 221 76)(line_width 3))
+	)
+	(drawing
+		(text "accumulate" (rect 38 46 136 105)(font "SansSerif" (color 128 0 0)(font_size 9)))
+		(text "accumulate" (rect 107 71 274 152)(font "SansSerif" (color 0 0 0)))
+		(text "fp32_mult_a" (rect 29 96 124 205)(font "SansSerif" (color 128 0 0)(font_size 9)))
+		(text "fp32_mult_a" (rect 107 121 280 252)(font "SansSerif" (color 0 0 0)))
+		(text "fp32_mult_b" (rect 29 146 124 305)(font "SansSerif" (color 128 0 0)(font_size 9)))
+		(text "fp32_mult_b" (rect 107 171 280 352)(font "SansSerif" (color 0 0 0)))
+		(text "clk" (rect 87 196 192 405)(font "SansSerif" (color 128 0 0)(font_size 9)))
+		(text "clk" (rect 107 221 232 452)(font "SansSerif" (color 0 0 0)))
+		(text "ena" (rect 82 246 182 505)(font "SansSerif" (color 128 0 0)(font_size 9)))
+		(text "ena" (rect 107 271 232 552)(font "SansSerif" (color 0 0 0)))
+		(text "fp32_result" (rect 222 46 510 105)(font "SansSerif" (color 128 0 0)(font_size 9)))
+		(text "fp32_result" (rect 169 71 404 152)(font "SansSerif" (color 0 0 0)))
+		(text " system " (rect 288 301 624 612)(font "SansSerif" ))
+		(line (pt 102 34)(pt 221 34)(line_width 1))
+		(line (pt 221 34)(pt 221 301)(line_width 1))
+		(line (pt 102 301)(pt 221 301)(line_width 1))
+		(line (pt 102 34)(pt 102 301)(line_width 1))
+		(line (pt 103 55)(pt 103 80)(line_width 1))
+		(line (pt 104 55)(pt 104 80)(line_width 1))
+		(line (pt 103 105)(pt 103 130)(line_width 1))
+		(line (pt 104 105)(pt 104 130)(line_width 1))
+		(line (pt 103 155)(pt 103 180)(line_width 1))
+		(line (pt 104 155)(pt 104 180)(line_width 1))
+		(line (pt 103 205)(pt 103 230)(line_width 1))
+		(line (pt 104 205)(pt 104 230)(line_width 1))
+		(line (pt 103 255)(pt 103 280)(line_width 1))
+		(line (pt 104 255)(pt 104 280)(line_width 1))
+		(line (pt 220 55)(pt 220 80)(line_width 1))
+		(line (pt 219 55)(pt 219 80)(line_width 1))
+		(line (pt 0 0)(pt 320 0)(line_width 1))
+		(line (pt 320 0)(pt 320 318)(line_width 1))
+		(line (pt 0 318)(pt 320 318)(line_width 1))
+		(line (pt 0 0)(pt 0 318)(line_width 1))
+	)
+)

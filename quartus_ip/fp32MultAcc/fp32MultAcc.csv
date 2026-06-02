@@ -1,0 +1,18 @@
+# system info fp32MultAcc on 2026.06.01.08:26:17
+system_info:
+name,value
+DEVICE,A5EB013BB23BE4SCS
+DEVICE_FAMILY,Agilex 5
+GENERATION_ID,0
+#
+#
+# Files generated for fp32MultAcc on 2026.06.01.08:26:17
+files:
+filepath,kind,attributes,module,is_top
+sim/fp32MultAcc.v,VERILOG,CONTAINS_INLINE_CONFIGURATION,fp32MultAcc,true
+agilex_native_floating_point_dsp_100/sim/fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq.v,VERILOG,,fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq,false
+#
+# Map from instance-path to kind of module
+instances:
+instancePath,module
+fp32MultAcc.agilex_native_floating_point_dsp_0,fp32MultAcc_agilex_native_floating_point_dsp_100_sa6roxq

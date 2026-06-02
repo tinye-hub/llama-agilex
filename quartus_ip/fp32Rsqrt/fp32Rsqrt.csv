@@ -1,0 +1,22 @@
+# system info fp32Rsqrt on 2026.06.01.10:05:28
+system_info:
+name,value
+DEVICE,A5EB013BB23BE4SCS
+DEVICE_FAMILY,Agilex 5
+GENERATION_ID,0
+#
+#
+# Files generated for fp32Rsqrt on 2026.06.01.10:05:28
+files:
+filepath,kind,attributes,module,is_top
+sim/fp32Rsqrt.v,VERILOG,CONTAINS_INLINE_CONFIGURATION,fp32Rsqrt,true
+altera_fp_functions_19110/sim/fp32Rsqrt_altera_fp_functions_19110_5fbcymq_memoryC0_uid58_invSqrtTables_lutmem.hex,HEX,,fp32Rsqrt_altera_fp_functions_19110_5fbcymq,false
+altera_fp_functions_19110/sim/fp32Rsqrt_altera_fp_functions_19110_5fbcymq_memoryC1_uid61_invSqrtTables_lutmem.hex,HEX,,fp32Rsqrt_altera_fp_functions_19110_5fbcymq,false
+altera_fp_functions_19110/sim/fp32Rsqrt_altera_fp_functions_19110_5fbcymq_memoryC2_uid64_invSqrtTables_lutmem.hex,HEX,,fp32Rsqrt_altera_fp_functions_19110_5fbcymq,false
+altera_fp_functions_19110/sim/dspba_library_ver.sv,SYSTEM_VERILOG,,fp32Rsqrt_altera_fp_functions_19110_5fbcymq,false
+altera_fp_functions_19110/sim/fp32Rsqrt_altera_fp_functions_19110_5fbcymq.sv,SYSTEM_VERILOG,,fp32Rsqrt_altera_fp_functions_19110_5fbcymq,false
+#
+# Map from instance-path to kind of module
+instances:
+instancePath,module
+fp32Rsqrt.fp_functions_0,fp32Rsqrt_altera_fp_functions_19110_5fbcymq

@@ -1,0 +1,18 @@
+# system info fp32Add on 2026.06.01.09:23:19
+system_info:
+name,value
+DEVICE,A5EB013BB23BE4SCS
+DEVICE_FAMILY,Agilex 5
+GENERATION_ID,0
+#
+#
+# Files generated for fp32Add on 2026.06.01.09:23:19
+files:
+filepath,kind,attributes,module,is_top
+sim/fp32Add.v,VERILOG,CONTAINS_INLINE_CONFIGURATION,fp32Add,true
+agilex_native_floating_point_dsp_100/sim/fp32Add_agilex_native_floating_point_dsp_100_m5fvifq.v,VERILOG,,fp32Add_agilex_native_floating_point_dsp_100_m5fvifq,false
+#
+# Map from instance-path to kind of module
+instances:
+instancePath,module
+fp32Add.agilex_native_floating_point_dsp_0,fp32Add_agilex_native_floating_point_dsp_100_m5fvifq
