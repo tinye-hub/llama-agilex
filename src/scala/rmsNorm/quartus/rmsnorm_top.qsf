@@ -1,0 +1,47 @@
+# -------------------------------------------------------------------------- #
+# RMSNorm module — Agilex 5E stand-alone synthesis (no bitstream)
+# Run from src/scala/rmsNorm:  make quartus
+# -------------------------------------------------------------------------- #
+
+set_global_assignment -name FAMILY "Agilex 5"
+set_global_assignment -name DEVICE A5EB013BB23BE4SCS
+set_global_assignment -name DEVICE_FILTER_PACKAGE VPBGA
+set_global_assignment -name TOP_LEVEL_ENTITY RmsNormAxiTop
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 25.1.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "2026.06.03"
+set_global_assignment -name LAST_QUARTUS_VERSION "25.1.0 Standard Edition"
+
+# Stop before Assembler — no SOF/RBF/bitstream
+set_global_assignment -name FLOW_ENABLE_ASSEMBLER OFF
+set_global_assignment -name FLOW_ENABLE_PROGRAMMER OFF
+
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 100
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_PRESET_HPS_COLD 40
+set_global_assignment -name POWER_PRESET_HPS_TYPICAL 50
+set_global_assignment -name POWER_PRESET_HPS_WARM 60
+
+# SpinalHDL output (make verilog)
+set_global_assignment -name VERILOG_FILE ../gen/verilog/RmsNormAxiTop.v
+set_global_assignment -name SEARCH_PATH ../gen/verilog
+
+# Altera FP IP (repo quartus_ip/)
+set_global_assignment -name IP_SEARCH_PATH "../../../../quartus_ip"
+set_global_assignment -name IP_FILE ../../../../quartus_ip/fp16ToFp32.ip
+set_global_assignment -name IP_FILE ../../../../quartus_ip/fp32ToFp16.ip
+set_global_assignment -name IP_FILE ../../../../quartus_ip/fp32Rsqrt.ip
+set_global_assignment -name IP_FILE ../../../../quartus_ip/fp32MultAcc.ip
+set_global_assignment -name IP_FILE ../../../../quartus_ip/fp32Add.ip
+
+set_global_assignment -name QIP_FILE ../../../../quartus_ip/fp16ToFp32/fp16ToFp32.qip
+set_global_assignment -name QIP_FILE ../../../../quartus_ip/fp32ToFp16/fp32ToFp16.qip
+set_global_assignment -name QIP_FILE ../../../../quartus_ip/fp32Rsqrt/fp32Rsqrt.qip
+set_global_assignment -name QIP_FILE ../../../../quartus_ip/fp32MultAcc/fp32MultAcc.qip
+set_global_assignment -name QIP_FILE ../../../../quartus_ip/fp32Add/fp32Add.qip
+
+set_global_assignment -name SDC_FILE constraints/rmsnorm_top.sdc
+
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top

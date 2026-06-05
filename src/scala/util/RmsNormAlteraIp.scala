@@ -17,6 +17,7 @@ object RmsNormAlteraIp {
   val mul:      (Flow[Bits], Flow[Bits]) => Flow[Bits]                = fp32MultAcc.mul
   val mulBlock: (Stream[Bits], Stream[Bits]) => Stream[Bits]         = fp32MultAcc.mulStream
   val acc:      Flow[Fragment[Bits]] => Flow[Fragment[Bits]]           = fp32MultAcc.serialAcc
+  val sqrSum:   Flow[Fragment[Bits]] => Flow[Fragment[Bits]]           = fp32MultAcc.sqrSum
   val add:      (Flow[Bits], Flow[Bits]) => Flow[Bits]                = fp32Add.add
   val rsqrt:    Flow[Bits] => Flow[Bits]                               = fp32Rsqrt.rsqrt
 }
@@ -28,6 +29,7 @@ object RmsNormAlteraIpSim {
   val mul:      (Flow[Bits], Flow[Bits]) => Flow[Bits]                = fp32MultAcc.mul_sim
   val mulBlock: (Stream[Bits], Stream[Bits]) => Stream[Bits]         = fp32MultAcc.mulStream_sim
   val acc:      Flow[Fragment[Bits]] => Flow[Fragment[Bits]]           = fp32MultAcc.serialAcc_sim
+  val sqrSum:   Flow[Fragment[Bits]] => Flow[Fragment[Bits]]           = fp32MultAcc.sqrSum_sim
   val add:      (Flow[Bits], Flow[Bits]) => Flow[Bits]                = fp32Add.add_sim
   val rsqrt:    Flow[Bits] => Flow[Bits]                               = fp32Rsqrt.rsqrt_sim
 }

@@ -1,0 +1,3 @@
+# sbt (under src/scala — do not commit build artifacts)
+src/scala/target/
+src/scala/project/target/
