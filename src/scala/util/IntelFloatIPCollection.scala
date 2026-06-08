@@ -13,11 +13,17 @@ import scala.language.postfixOps
  * | fp16ToFp32          | fp16ToFp32     | 0  | altera_fp_functions |
  * | fp32ToFp16          | fp32ToFp16     | 2  | altera_fp_functions |
  * | fp32Rsqrt           | fp32Rsqrt      | 14 | altera_fp_functions |
- * | fp32MultAcc         | fp32MultAcc    | 4  | native FP DSP |
- * | fp32Add             | fp32Add        | 4  | native FP DSP |
+ * | fp32MultAcc         | fp32MultAcc    | 5  | native FP DSP |
+ * | fp32Add             | fp32Add        | 3  | native FP DSP |
  *
- * Latencies for fp16/fp32 convert and rsqrt come from Quartus `*_generation.rpt`.
- * Native DSP latency is approximate (mult/add/output pipelines); re-check in simulation.
+ * altera_fp_functions latencies: Quartus `quartus_ip/<name>/<name>_generation.rpt`
+ * (`Latency on Agilex 5 is N cycle(s)`).
+ *
+ * Native DSP latencies: count enabled pipeline registers in the generated netlist
+ * (`quartus_ip/fp32MultAcc/.../fp32MultAcc_agilex_native_floating_point_dsp_*.v`):
+ * mult path — mult_a/b, mult_pipeline, mult_2nd_pipeline, adder_input, output → 5;
+ * add path — adder_a/b, adder_input, output → 3.
+ * Matches `Delay(valid, latency)` in generated adapters (see `RmsNormAxiTop.v`).
  *
  * Synthesis: `setDefinitionName` must match the Quartus IP instance name; RTL is linked
  * via `golden_top.qsf` `IP_FILE` entries, not via Scala paths.
@@ -125,7 +131,8 @@ object fp32MultAcc {
 object fp32Add {
 
   val ipName  = "fp32Add"
-  val latency = 4
+  /** End-to-end: both operands valid → result valid (ModelSim / IP datasheet). */
+  val latency = 3
 
   def add(a: Flow[Bits], b: Flow[Bits]): Flow[Bits] = new Composite(a, "add") {
     val adp = new FpAddAdapter(ipName, latency)

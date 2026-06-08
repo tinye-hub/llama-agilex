@@ -6,11 +6,21 @@ import spinal.lib._
 import util.{RmsNormAlteraIpSim, VerilatorSimCompat}
 
 import scala.language.postfixOps
+import scala.util.Random
 
 /** Stream-level simulation of [[RmsNormCore]] (no AXI), shorter path for debug. */
 object RmsNormCoreSim extends App {
 
   val simDim = sys.env.getOrElse("RMSNORM_SIM_DIM", "2048").toInt
+  val xMin     = -32.0f
+  val xMax     = 32.0f
+  val gammaMin = 0.0f
+  val gammaMax = 8.0f
+  val vecSeed = sys.env.getOrElse("RMSNORM_SIM_SEED", "0xC0FFEE01").stripPrefix("0x").toLong.toInt
+  val rng = new Random(vecSeed)
+
+  def randVec(dim: Int, lo: Float, hi: Float): Array[Float] =
+    Array.fill(dim)(rng.nextFloat() * (hi - lo) + lo)
 
   VerilatorSimCompat.withWDataCompat(
     SimConfig
@@ -22,7 +32,6 @@ object RmsNormCoreSim extends App {
       toFp32_func = RmsNormAlteraIpSim.toFp32,
       toFp16_func = RmsNormAlteraIpSim.toFp16,
       mul_func = RmsNormAlteraIpSim.mul,
-      mul_func_block = RmsNormAlteraIpSim.mulBlock,
       sqrSum_func = RmsNormAlteraIpSim.sqrSum,
       add_func = RmsNormAlteraIpSim.add,
       rsqrt_func = RmsNormAlteraIpSim.rsqrt
@@ -31,8 +40,11 @@ object RmsNormCoreSim extends App {
       dut.clockDomain.forkStimulus(10)
       dut.clockDomain.waitSampling(5)
 
-      val x = Array.tabulate(simDim)(i => (i + 1).toFloat * 0.25f)
-      val g = Array.fill(simDim)(1.0f)
+      val x = randVec(simDim, xMin, xMax)
+      val g = randVec(simDim, gammaMin, gammaMax)
+      println(
+        f"RmsNormCoreSim random vectors seed=0x$vecSeed%08x x=[$xMin%.1f,$xMax%.1f] gamma=[$gammaMin%.1f,$gammaMax%.1f]"
+      )
 
       fork {
         for (i <- 0 until simDim) {
@@ -54,8 +66,9 @@ object RmsNormCoreSim extends App {
         dut.io.weightIn.valid #= false
       }
 
+      dut.io.emitAllow #= true
+
       var cnt = 0
-      dut.io.dataOut.ready #= true
       while (cnt < simDim) {
         dut.clockDomain.waitSampling()
         if (dut.io.dataOut.valid.toBoolean) {

@@ -84,7 +84,8 @@ questa-wave:
 	  $(NC_RUN_GUI) vsim -view $(notdir $(QUESTA_WLF))
 
 clean-questa:
-	rm -rf test/questa/work
+	rm -rf test/questa/work test/questa/golden_refs
+	rm -rf test/questa/etch*
 
 quartus: verilog
 	cd quartus && $(NC_RUN) $(QUARTUS) -t scripts/synth_fit_sta.tcl

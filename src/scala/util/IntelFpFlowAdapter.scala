@@ -7,12 +7,22 @@ import scala.language.postfixOps
 
 /**
  * Wraps [[IntelFpFunctionsBlackBox]] with Spinal `Flow` valid/payload semantics.
+ *
+ * Quartus `altera_fp_functions` simulation models use `en` as a per-stage clock enable:
+ * when `en` is 0 the pipeline does not advance. A one-cycle `valid` pulse therefore
+ * leaves `q` undefined unless `en` stays asserted while operands are held stable.
+ *
+ * For `latency > 0`, we tie `en` high and hold `a` across idle cycles (last valid value).
+ * For `latency == 0`, keep `en := valid` (legacy path for zero-latency convert).
+ *
+ * @param ipResultShim extra register stages on `q`; 0 = drive `io.r.payload` directly from `ip.io.q`.
  */
 class FpFunctionsUnaryAdapter(
-  val ipName:      String,
-  val latency:     Int,
-  val inputWidth:  Int,
-  val outputWidth: Int
+  val ipName:       String,
+  val latency:      Int,
+  val inputWidth:   Int,
+  val outputWidth:  Int,
+  val ipResultShim: Int = 0
 ) extends Component {
 
   val io = new Bundle {
@@ -21,15 +31,31 @@ class FpFunctionsUnaryAdapter(
   }
 
   val ip = new IntelFpFunctionsBlackBox(ipName, inputWidth, outputWidth)
-  ip.io.en     := io.a.valid.asBits
-  ip.io.a      := io.a.payload
+
+  val aHeld = Reg(Bits(inputWidth bits)) init (B(0, inputWidth bits))
+  when(io.a.valid) {
+    aHeld := io.a.payload
+  }
+  val operand = Mux(io.a.valid, io.a.payload, aHeld)
+
+  if (latency > 0) {
+    ip.io.en := B"1"
+    ip.io.a  := operand
+  } else {
+    ip.io.en := io.a.valid.asBits
+    ip.io.a  := io.a.payload
+  }
 
   if (latency == 0) {
     io.r.valid   := io.a.valid
     io.r.payload := ip.io.q
   } else {
-    io.r.valid   := Delay(io.a.valid, latency, init = False)
-    io.r.payload := Delay(ip.io.q, latency)
+    io.r.valid := Delay(io.a.valid, latency, init = False)
+    if (ipResultShim == 0) {
+      io.r.payload := ip.io.q
+    } else {
+      io.r.payload := Delay(ip.io.q, ipResultShim)
+    }
   }
 }
 
@@ -181,10 +207,14 @@ class FpMultAccSerialAccAdapter(
 
 /**
  * FP32 add via [[IntelFpAddBlackBox]].
+ *
+ * @param latency     cycles from `fire` to `io.r.valid` (end-to-end, match IP pipeline depth).
+ * @param ipResultShim extra register stages after `fp32_result`; 0 = drive `io.r.payload` directly from IP.
  */
 class FpAddAdapter(
-  val ipName:  String,
-  val latency: Int
+  val ipName:       String,
+  val latency:      Int,
+  val ipResultShim: Int = 0
 ) extends Component {
 
   val io = new Bundle {
@@ -203,7 +233,11 @@ class FpAddAdapter(
     io.r.valid   := fire
     io.r.payload := ip.io.fp32_result
   } else {
-    io.r.valid   := Delay(fire, latency, init = False)
-    io.r.payload := Delay(ip.io.fp32_result, latency)
+    io.r.valid := Delay(fire, latency, init = False)
+    if (ipResultShim == 0) {
+      io.r.payload := ip.io.fp32_result
+    } else {
+      io.r.payload := Delay(ip.io.fp32_result, ipResultShim)
+    }
   }
 }

@@ -4,6 +4,7 @@
 `timescale 1ns/1ps
 
 import rmsnorm_fp16_pkg::*;
+import rmsnorm_golden_ref_pkg::*;
 
 module tb_rmsnorm_axi;
 
@@ -13,11 +14,15 @@ module tb_rmsnorm_axi;
   localparam int DIM = 2048;
 `endif
   localparam int CLK_PERIOD_NS = 10;
-  localparam real EPS = 1.0e-5;
+  localparam real TOL = 1.0e-2;
   localparam int MAX_CYCLES = DIM * 800;
-  // Heartbeat ~16 lines across the output-wait timeout (scales with DIM).
-  // Too small (e.g. 100) floods Questa I/O; too large feels hung on slow IP sim.
+  localparam string GOLDEN_DIR = "golden_refs";
   localparam int HEARTBEAT_CYCLES = MAX_CYCLES / 16;
+  localparam real X_MIN     = -32.0;
+  localparam real X_MAX     = 32.0;
+  localparam real GAMMA_MIN = 0.0;
+  localparam real GAMMA_MAX = 8.0;
+  localparam int VEC_RAND_SEED = 32'hC0FFEE01;
 
   logic clk;
   logic reset;
@@ -83,29 +88,14 @@ module tb_rmsnorm_axi;
     end
   end
 
-  // Questa has no $abs for real (vsim-PLI-3003); use explicit compare.
   function automatic real abs_real(input real v);
     return (v < 0.0) ? -v : v;
   endfunction
 
-  function automatic void golden_rmsnorm(
-    input  shortreal x[],
-    input  shortreal gamma[],
-    input  real eps,
-    output shortreal y[]
-  );
-    real sum;
-    real scale;
-    int d;
-    d = x.size();
-    y = new[d];
-    sum = 0.0;
-    for (int i = 0; i < d; i++) sum += real'(x[i]) * real'(x[i]);
-    scale = 1.0 / $sqrt(sum / d + eps);
-    for (int i = 0; i < d; i++) y[i] = shortreal'(real'(x[i]) * scale * real'(gamma[i]));
+  function automatic real rand_real_range(input real lo, input real hi);
+    return lo + (real'($urandom) / 4294967295.0) * (hi - lo);
   endfunction
 
-  // Drive DIM beats: random idle (0..GAP_MAX cycles), then 1..BURST_MAX consecutive fires if ready.
   task automatic drive_data_stream_jitter(input shortreal values[], input logic [31:0] user_ctx, input int seed);
     int idx, gap, burst, sent;
     localparam int BURST_MAX = 4;
@@ -202,25 +192,31 @@ module tb_rmsnorm_axi;
     shortreal out[DIM];
     shortreal golden[DIM];
     real max_err;
+    int mismatches;
     int out_cnt;
     int cycles;
 
     sim_cycle  = 0;
     hb_out_cnt = 0;
-    io_dataIn_valid  = 0;
+    io_dataIn_valid   = 0;
     io_weightIn_valid = 0;
-    io_dataOut_ready = 1;
+    io_dataOut_ready  = 1;
+
+    $srandom(VEC_RAND_SEED);
+    for (int i = 0; i < DIM; i++) begin
+      x[i]     = shortreal'(rand_real_range(X_MIN, X_MAX));
+      gamma[i] = shortreal'(rand_real_range(GAMMA_MIN, GAMMA_MAX));
+    end
+    $display("[tb] random vectors seed=%0h x=[%0.1f,%0.1f] gamma=[%0.1f,%0.1f] x[0]=%0.4f gamma[0]=%0.4f",
+             VEC_RAND_SEED, X_MIN, X_MAX, GAMMA_MIN, GAMMA_MAX, real'(x[0]), real'(gamma[0]));
+
+    golden_write_refs(DIM, x, gamma, GOLDEN_DIR, golden);
+
     $display("[tb] reset and stimulus (dim=%0d)", DIM);
     reset = 1'b1;
     repeat (5) @(posedge clk);
     reset = 1'b0;
     repeat (5) @(posedge clk);
-
-    for (int i = 0; i < DIM; i++) begin
-      x[i]     = shortreal'((i + 1) * 0.25);
-      gamma[i] = shortreal'(0.5 + (i + 1) * 0.125);
-    end
-    golden_rmsnorm(x, gamma, EPS, golden);
 
     $display("[tb] FP16 encodings: x[0]=%h x[1]=%h gamma[0]=%h gamma[1]=%h",
              real_to_fp16(real'(x[0])), real_to_fp16(real'(x[1])),
@@ -250,19 +246,27 @@ module tb_rmsnorm_axi;
       $fatal(1, "timeout: expected %0d output beats, got %0d", DIM, out_cnt);
     end
 
-    max_err = 0.0;
+    max_err    = 0.0;
+    mismatches = 0;
     for (int i = 0; i < DIM; i++) begin
       real err;
       err = abs_real(real'(out[i]) - real'(golden[i]));
       if (err > max_err) max_err = err;
+      if (err > TOL) mismatches++;
     end
 
-    $display("RmsNormAxiTop Questa dim=%0d max abs err vs float ref = %0.6f", DIM, max_err);
-    if (max_err > 0.25) begin
-      $fatal(1, "RMSNorm mismatch (threshold 0.25 for FP16+IP pipeline)");
+    $display("RmsNormAxiTop Questa dim=%0d final check:", DIM);
+    $display("  tolerance:   %0.1e  (PASS when max abs err <= tolerance)", TOL);
+    $display("  max abs err: %0.8f", max_err);
+    $display("  mismatches:  %0d / %0d  (output beats with err > tolerance)", mismatches, DIM);
+    if (max_err <= TOL) begin
+      $display("\033[32m********** PASS **********\033[0m");
+      $finish;
+    end else begin
+      $display("\033[31m********** FAIL **********\033[0m");
+      $fatal(1, "FAIL: max abs err %0.8f > tolerance %0.1e (%0d/%0d mismatches)",
+             max_err, TOL, mismatches, DIM);
     end
-    $display("PASS");
-    $finish;
   end
 
 endmodule

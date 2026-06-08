@@ -21,6 +21,7 @@ vlog -work work -sv +define+QUESTA_SIM +define+RMSNORM_DIM=${_dim} \
     -L altera_fp_functions_19110 \
     -L agilex_native_floating_point_dsp_100 \
     [file join $QUESTA_DIR fp16_utils.sv] \
+    [file join $QUESTA_DIR golden_ref.sv] \
     $GEN_TOP_V \
     [file join $QUESTA_DIR tb_rmsnorm_axi.sv]
 

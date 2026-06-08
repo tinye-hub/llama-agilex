@@ -26,12 +26,11 @@ object RmsNormAxiTop {
     toFp32_func: Flow[Bits] => Flow[Bits] = RmsNormAlteraIp.toFp32,
     toFp16_func: Flow[Bits] => Flow[Bits] = RmsNormAlteraIp.toFp16,
     mul_func: (Flow[Bits], Flow[Bits]) => Flow[Bits] = RmsNormAlteraIp.mul,
-    mul_func_block: (Stream[Bits], Stream[Bits]) => Stream[Bits] = RmsNormAlteraIp.mulBlock,
     sqrSum_func: Flow[Fragment[Bits]] => Flow[Fragment[Bits]] = RmsNormAlteraIp.sqrSum,
     add_func: (Flow[Bits], Flow[Bits]) => Flow[Bits] = RmsNormAlteraIp.add,
     rsqrt_func: Flow[Bits] => Flow[Bits] = RmsNormAlteraIp.rsqrt
   ): RmsNormAxiTop =
-    new RmsNormAxiTop(RmsNormGenerics(dim), toFp32_func, toFp16_func, mul_func, mul_func_block, sqrSum_func, add_func, rsqrt_func)
+    new RmsNormAxiTop(RmsNormGenerics(dim), toFp32_func, toFp16_func, mul_func, sqrSum_func, add_func, rsqrt_func)
 }
 
 /**
@@ -42,7 +41,6 @@ class RmsNormAxiTop(
   toFp32_func: Flow[Bits] => Flow[Bits] = RmsNormAlteraIp.toFp32,
   toFp16_func: Flow[Bits] => Flow[Bits] = RmsNormAlteraIp.toFp16,
   mul_func: (Flow[Bits], Flow[Bits]) => Flow[Bits] = RmsNormAlteraIp.mul,
-  mul_func_block: (Stream[Bits], Stream[Bits]) => Stream[Bits] = RmsNormAlteraIp.mulBlock,
   sqrSum_func: Flow[Fragment[Bits]] => Flow[Fragment[Bits]] = RmsNormAlteraIp.sqrSum,
   add_func: (Flow[Bits], Flow[Bits]) => Flow[Bits] = RmsNormAlteraIp.add,
   rsqrt_func: Flow[Bits] => Flow[Bits] = RmsNormAlteraIp.rsqrt
@@ -57,7 +55,7 @@ class RmsNormAxiTop(
     val dataOut  = master(Axi4Stream(axisCfg))
   }
 
-  val core = new RmsNormCore(g, toFp32_func, toFp16_func, mul_func, mul_func_block, sqrSum_func, add_func, rsqrt_func)
+  val core = new RmsNormCore(g, toFp32_func, toFp16_func, mul_func, sqrSum_func, add_func, rsqrt_func)
 
   val dataStream = Stream(Bits(16 bits))
   dataStream.valid   := io.dataIn.valid
@@ -72,8 +70,20 @@ class RmsNormAxiTop(
   core.io.dataIn   << dataStream
   core.io.weightIn << weightStream
 
-  val outStream = Stream(Bits(16 bits))
-  outStream << core.io.dataOut
+  val outFifoDepth = 16
+  val outFifoOccWidth = log2Up(outFifoDepth + 1)
+  val outFifo = StreamFifo(
+    dataType = Bits(16 bits),
+    depth    = outFifoDepth
+  )
+
+  val outFifoEmpty = outFifo.io.occupancy === U(0, outFifoOccWidth bits)
+  core.io.emitAllow := outFifoEmpty && io.dataOut.ready
+
+  val outPush = Stream(Bits(16 bits))
+  outPush.valid   := core.io.dataOut.valid
+  outPush.payload := core.io.dataOut.payload
+  outFifo.io.push << outPush
 
   val contextUser = Reg(Bits(15 bits)) init (0)
   val inBeatCnt   = Reg(UInt(log2Up(dim + 1) bits)) init (0)
@@ -89,7 +99,7 @@ class RmsNormAxiTop(
 
   val outBeatCnt = Reg(UInt(log2Up(dim + 1) bits)) init (0)
   val outLast    = outBeatCnt === U(dim - 1, log2Up(dim + 1) bits)
-  when(io.dataOut.fire) {
+  when(outFifo.io.pop.fire) {
     outBeatCnt := outBeatCnt + 1
     when(outLast) {
       outBeatCnt := 0
@@ -100,10 +110,10 @@ class RmsNormAxiTop(
   outUser16(14 downto 0) := contextUser
   outUser16(15)          := !outLast
 
-  io.dataOut.valid := outStream.valid
-  io.dataOut.payload.data := outStream.payload
+  io.dataOut.valid := outFifo.io.pop.valid
+  io.dataOut.payload.data := outFifo.io.pop.payload
   io.dataOut.payload.keep.setAll()
   io.dataOut.payload.last := outLast
   io.dataOut.payload.user := outUser16.resized
-  outStream.ready := io.dataOut.ready
+  outFifo.io.pop.ready := io.dataOut.ready
 }

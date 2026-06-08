@@ -1,3 +1,27 @@
 # sbt (under src/scala — do not commit build artifacts)
 src/scala/target/
 src/scala/project/target/
+src/scala/gen/
+
+# RMSNorm generated outputs (Questa rules: test/questa/.gitignore)
+src/scala/rmsNorm/gen/sim/
+
+# IDE / local editor
+.cursor/
+.vscode/
+
+# EDA environment & simulation (local / machine-specific)
+README.QUESTA
+compile_q_verilog.do
+env.sh
+set_env.sh
+questa_device_mapping.tcl
+libs/
+simlib/
+quartus_prj/
+
+# External / symlinked trees
+llama-fpga
+
+# Questa / Verilator logs at repo root
+transcript

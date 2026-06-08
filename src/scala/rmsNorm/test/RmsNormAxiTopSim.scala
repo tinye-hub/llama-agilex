@@ -6,6 +6,7 @@ import util.{RmsNormAlteraIpSim, VerilatorSimCompat}
 
 import scala.language.postfixOps
 import scala.math.{abs, sqrt}
+import scala.util.Random
 
 /**
  * Simulation for [[RmsNormAxiTop]] using latency stubs ([[util.RmsNormAlteraIpSim]]).
@@ -74,6 +75,15 @@ object RmsNormAxiTopSim extends App {
 
   val simDim = sys.env.getOrElse("RMSNORM_SIM_DIM", "2048").toInt
   val eps    = 1e-5
+  val xMin     = -32.0f
+  val xMax     = 32.0f
+  val gammaMin = 0.0f
+  val gammaMax = 8.0f
+  val vecSeed = sys.env.getOrElse("RMSNORM_SIM_SEED", "0xC0FFEE01").stripPrefix("0x").toLong.toInt
+  val rng = new Random(vecSeed)
+
+  def randVec(dim: Int, lo: Float, hi: Float): Array[Float] =
+    Array.fill(dim)(rng.nextFloat() * (hi - lo) + lo)
 
   val cfg = VerilatorSimCompat.withWDataCompat(
     SimConfig
@@ -86,7 +96,6 @@ object RmsNormAxiTopSim extends App {
       toFp32_func = RmsNormAlteraIpSim.toFp32,
       toFp16_func = RmsNormAlteraIpSim.toFp16,
       mul_func = RmsNormAlteraIpSim.mul,
-      mul_func_block = RmsNormAlteraIpSim.mulBlock,
       sqrSum_func = RmsNormAlteraIpSim.sqrSum,
       add_func = RmsNormAlteraIpSim.add,
       rsqrt_func = RmsNormAlteraIpSim.rsqrt
@@ -97,8 +106,12 @@ object RmsNormAxiTopSim extends App {
     dut.clockDomain.forkStimulus(10)
     dut.clockDomain.waitSampling(5)
 
-    val x      = Array.tabulate(simDim)(i => (i + 1).toFloat * 0.25f)
-    val gamma  = Array.tabulate(simDim)(i => 0.5f + (i + 1) * 0.125f)
+    val x     = randVec(simDim, xMin, xMax)
+    val gamma = randVec(simDim, gammaMin, gammaMax)
+    println(
+      f"RmsNormAxiTopSim random vectors seed=0x$vecSeed%08x x=[$xMin%.1f,$xMax%.1f] gamma=[$gammaMin%.1f,$gammaMax%.1f] " +
+        f"x(0)=${x(0)}%.4f gamma(0)=${gamma(0)}%.4f"
+    )
     val golden = goldenRmsNorm(x, gamma, eps)
 
     forkDataIn(dut, x, userContext = 0x123)
@@ -106,7 +119,26 @@ object RmsNormAxiTopSim extends App {
     val received = consumeDataOut(dut, simDim)
 
     assert(received.length == simDim, s"expected $simDim outputs, got ${received.length}")
-    val maxErr = received.zip(golden).map { case (a, b) => abs(a - b) }.max
-    println(f"RmsNormAxiTopSim dim=$simDim max abs err vs float ref = $maxErr%.6f")
+
+    val tol = 1e-3f
+    var mismatches = 0
+    var maxErr     = 0.0f
+    for (i <- 0 until simDim) {
+      val err = abs(received(i) - golden(i))
+      if (err > maxErr) maxErr = err
+      if (err > tol) mismatches += 1
+    }
+
+    println(f"RmsNormAxiTopSim dim=$simDim final check:")
+    println(f"  tolerance:   $tol%.1e  (PASS when max abs err <= tolerance)")
+    println(f"  max abs err: $maxErr%.8f")
+    println(f"  mismatches:  $mismatches / $simDim  (output beats with err > tolerance)")
+    if (maxErr <= tol) {
+      println("\u001b[32m********** PASS **********\u001b[0m")
+      simSuccess()
+    } else {
+      println("\u001b[31m********** FAIL **********\u001b[0m")
+      simFailure(f"max abs err $maxErr%.8f > tolerance $tol%.1e ($mismatches/$simDim mismatches)")
+    }
   }
 }
