@@ -25,17 +25,16 @@ patch_wrapper() {
   if grep -q 'using WData = EData' "$f"; then
     return 0
   fi
-  sed -i '/VRmsNormAxiTop__Syms\.h/a #include "verilated.h"\nusing WData = EData;' "$f"
+  sed -i '/#include "verilated.h"/a using WData = EData;' "$f" 2>/dev/null || true
+  if ! grep -q 'using WData = EData' "$f"; then
+    sed -i '1a #include "verilated.h"\nusing WData = EData;' "$f"
+  fi
 }
 
 if [[ -n "$BUILD_DIR" ]]; then
-  for f in \
-    "${BUILD_DIR}/VRmsNormAxiTop__spinalWrapper.cpp" \
-    "${BUILD_DIR}/../verilator/VRmsNormAxiTop__spinalWrapper.cpp" \
-    "${BUILD_DIR}/verilator/VRmsNormAxiTop__spinalWrapper.cpp"
-  do
+  while IFS= read -r -d '' f; do
     patch_wrapper "$f"
-  done
+  done < <(find "${BUILD_DIR}" -name '*__spinalWrapper.cpp' -print0 2>/dev/null)
 fi
 
 exec "$REAL_MAKE" "${args[@]}"

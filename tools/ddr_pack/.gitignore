@@ -1,0 +1,5 @@
+# DDR packer outputs
+*.bin
+vendor/
+.venv/
+__pycache__/
