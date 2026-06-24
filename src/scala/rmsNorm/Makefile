@@ -12,12 +12,10 @@ PROJECT     := rmsnorm_top
 DIM         ?= 2048
 SBT         ?= sbt -batch
 
-# Quartus/Questa license: submit via nc (see repo set_env.sh). Override for local run:
-#   make quartus NC_RUN=
-# Or: source set_env.sh  (exports NC_RUN) before make.
-NC_RUN ?= nc run -I -r Taskerlist:i OSREL:RHEL8 RAM/8GB CORES/8 CGROUP:CORES -jpp fastest,pack --
-# -Ix: forward DISPLAY for Questa GUI (vsim -view). CLI sim uses NC_RUN without -Ix.
-NC_RUN_GUI ?= nc run -I -Ix -r Taskerlist:i OSREL:RHEL8 RAM/8GB CORES/8 CGROUP:CORES -jpp fastest,pack --
+# Quartus/Questa on batch nodes: source ../../../set_env.sh  (exports NC_RUN via AAP nc).
+# Default: local run (NC_RUN empty). Login node without set_env.sh has /usr/bin/nc = Ncat, not AAP.
+NC_RUN ?=
+NC_RUN_GUI ?=
 export NC_RUN
 export NC_RUN_GUI
 
@@ -36,7 +34,7 @@ endif
 
 .PHONY: all help verilog sim sim-core sim-axi \
 	questa-compile questa-axi questa-axi-wave questa-wave \
-	quartus quartus-report clean clean-sim clean-quartus clean-questa
+	quartus quartus-report quartus-all clean clean-sim clean-quartus clean-questa
 
 all: verilog
 
@@ -49,11 +47,12 @@ help:
 	@echo "  questa-wave      Open $(QUESTA_WLF) in Questa GUI ($(NC_RUN_GUI) vsim -view)"
 	@echo "  questa-compile   Questa compile only"
 	@echo "  quartus         Quartus syn+fit+sta (no .sof/.rbf)"
-	@echo "  quartus-report  Resource summary from fit"
+	@echo "  quartus-report  Fit + STA summary table"
+	@echo "  quartus-all     quartus + quartus-report"
 	@echo ""
-	@echo "  NC_RUN (CLI):      $(NC_RUN)"
-	@echo "  NC_RUN_GUI (X11):  $(NC_RUN_GUI)"
-	@echo "  Local EDA run: make quartus NC_RUN=  or  make questa-wave NC_RUN_GUI="
+	@echo "  NC_RUN:     $(if $(NC_RUN),$(NC_RUN),(empty — local run))"
+	@echo "  NC_RUN_GUI: $(if $(NC_RUN_GUI),$(NC_RUN_GUI),(empty — local run))"
+	@echo "  Batch EDA:  source ../../../set_env.sh  then make quartus / questa-axi"
 	@echo "  clean           Remove gen/verilog, gen/sim, quartus build dirs"
 
 verilog:
@@ -91,22 +90,39 @@ quartus: verilog
 	cd quartus && $(NC_RUN) $(QUARTUS) -t scripts/synth_fit_sta.tcl
 
 quartus-report:
-	@if [ -f quartus/output_files/$(PROJECT).fit.rpt ]; then \
-	  echo "=== $(PROJECT).fit.rpt (head) ==="; \
-	  grep -E "Logic utilization|Total logic elements|ALM|DSP|RAM|M20K|Device|Family" \
-	    quartus/output_files/$(PROJECT).fit.rpt | head -40; \
-	elif [ -f quartus/$(PROJECT).fit.summary ]; then \
-	  cat quartus/$(PROJECT).fit.summary; \
-	else \
-	  echo "No fit report yet — run: make quartus"; exit 1; \
-	fi
+	@FIT=quartus/output_files/$(PROJECT).fit.summary; \
+	STA=quartus/output_files/$(PROJECT).sta.summary; \
+	test -f "$$FIT" || { echo "Missing $$FIT — run: make quartus"; exit 1; }; \
+	test -f "$$STA" || { echo "Missing $$STA — run: make quartus"; exit 1; }; \
+	alm=$$(grep '^Logic utilization' "$$FIT" | sed 's/^[^:]*: //'); \
+	bram=$$(grep '^Total block memory bits' "$$FIT" | sed 's/^[^:]*: //'); \
+	ram=$$(grep '^Total RAM Blocks' "$$FIT" | sed 's/^[^:]*: //'); \
+	dsp=$$(grep '^Total DSP Blocks' "$$FIT" | sed 's/^[^:]*: //'); \
+	setup=$$(awk '/^Type  : Setup/{f=1} f&&/^TNS/{print $$3; exit}' "$$STA"); \
+	hold=$$(awk '/^Type  : Hold/{f=1} f&&/^TNS/{print $$3; exit}' "$$STA"); \
+	mpw=$$(awk '/^Type  : Minimum Pulse Width/{f=1} f&&/^TNS/{print $$3; exit}' "$$STA"); \
+	printf '\n$(PROJECT)  DIM=$(DIM)\n\n'; \
+	printf '| %-22s | %-36s |\n' 'Metric' 'Value'; \
+	printf '|%-24s|%-38s|\n' '------------------------' '--------------------------------------'; \
+	printf '| %-22s | %-36s |\n' 'Logic (ALMs)' "$$alm"; \
+	printf '| %-22s | %-36s |\n' 'Block memory bits' "$$bram"; \
+	printf '| %-22s | %-36s |\n' 'RAM blocks' "$$ram"; \
+	printf '| %-22s | %-36s |\n' 'DSP blocks' "$$dsp"; \
+	printf '| %-22s | %-36s |\n' 'Setup TNS' "$$setup"; \
+	printf '| %-22s | %-36s |\n' 'Hold TNS' "$$hold"; \
+	printf '| %-22s | %-36s |\n' 'Min pulse width TNS' "$$mpw"; \
+	printf '\n'
+
+quartus-all: quartus quartus-report
 
 clean-sim:
 	rm -rf gen/sim
 
 clean-quartus:
 	rm -rf quartus/db quartus/incremental_db quartus/output_files quartus/.qws \
-	       quartus/*.qws quartus/cdb quartus/serv_req_info.txt
+	       quartus/*.qws quartus/cdb quartus/serv_req_info.txt \
+	       quartus/qdb quartus/dni quartus/default.qsf quartus/default.*.rpt \
+	       quartus/*.qsf.backup
 
 clean: clean-sim clean-quartus clean-questa
 	rm -rf gen/verilog

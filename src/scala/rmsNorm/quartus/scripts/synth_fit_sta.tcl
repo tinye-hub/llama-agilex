@@ -8,7 +8,7 @@ if {![file exists ${project_name}.qpf]} {
     exit 1
 }
 
-project_open -revision default ${project_name}
+project_open -revision ${project_name} ${project_name}
 
 # Ensure Spinal Verilog exists
 set rtl "../gen/verilog/RmsNormAxiTop.v"

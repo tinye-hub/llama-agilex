@@ -13,8 +13,8 @@
 #
 # -------------------------------------------------------------------------- #
 
-QUARTUS_VERSION = "25.1"
-DATE            = "2026.06.03"
+QUARTUS_VERSION = "25.1.1"
+DATE            = "2026.06.08"
 
-PROJECT_REVISION = "default"
+PROJECT_REVISION = "rmsnorm_top"
 PROJECT_OUTPUT_DIRECTORY = output_files

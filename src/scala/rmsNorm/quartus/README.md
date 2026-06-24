@@ -1,6 +1,14 @@
 # rmsNorm Quartus 工程
 
-独立工程，用于在 Agilex 5E 上对 `RmsNormAxiTop` 做 **综合 + 布局布线 + 时序分析**，**不生成 bitstream**（QSF 中 `FLOW_ENABLE_ASSEMBLER OFF`）。
+独立工程，用于在 Agilex 5E 上对 `RmsNormAxiTop` 做 **综合 + 布局布线 + 时序分析**，**不生成 bitstream**（QSF 中 `FLOW_ENABLE_ASSEMBLER OFF`）。顶层 I/O 使用 `set_instance_assignment -name VIRTUAL_PIN ON -to * -entity RmsNormAxiTop`（与 ldpc 资源评估工程一致）。`FLOW_DISABLE_ASSEMBLER ON`，不生成 bitstream。
+
+## 文件清单
+
+| 类型 | 路径 |
+|:---|:---|
+| Spinal 生成 RTL | `../gen/verilog/RmsNormAxiTop.v` |
+| FP IP | `../../../../quartus_ip/{fp16ToFp32,fp32ToFp16,fp32Rsqrt,fp32MultAcc,fp32Add}.ip` |
+| 时序约束 | `constraints/rmsnorm_top.sdc` |
 
 ## 前置
 
