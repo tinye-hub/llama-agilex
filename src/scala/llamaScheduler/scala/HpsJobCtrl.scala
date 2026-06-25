@@ -3,7 +3,7 @@ package llamaScheduler
 import spinal.core._
 import spinal.lib._
 import spinal.lib.bus.amba4.axilite._
-import common.DdrMemoryMap
+import ddrMemoryMap.DdrMemoryMap
 
 /**
  * HPS MMIO register file (AXI4-Lite slave). See llama-scheduler-design.md §3.2.

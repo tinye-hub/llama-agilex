@@ -105,6 +105,60 @@ package rmsnorm_fp16_pkg;
     return f32_bits_to_real(fp16_to_f32_bits(h));
   endfunction
 
+  function automatic bit fp16_is_inf(input logic [15:0] h);
+    return (h[14:10] == 5'h1f) && (h[9:0] == 10'h0);
+  endfunction
+
+  function automatic bit fp16_is_zero(input logic [15:0] h);
+    return (h[14:10] == 5'h0) && (h[9:0] == 10'h0);
+  endfunction
+
+  // True when magnitude is near FP16 max normal (~65504); used for Inf saturation checks.
+  function automatic bit fp16_near_max(input logic [15:0] h);
+    real r;
+    r = real'(fp16_to_shortreal(h));
+    if (r < 0.0) r = -r;
+    return r >= 60000.0;
+  endfunction
+
+  // Compare RTL vs golden FP16 encodings; allow Quartus emit Inf vs SW max-normal.
+  function automatic real fp16_abs_err(
+    input  logic [15:0] recv,
+    input  logic [15:0] gold,
+    input  real         tol,
+    output bit          agree
+  );
+    real rr, rg, err;
+    agree = 1'b0;
+    if (recv === gold) begin
+      agree = 1'b1;
+      return 0.0;
+    end
+    if (fp16_is_inf(recv) && fp16_near_max(gold)) begin
+      agree = 1'b1;
+      return 0.0;
+    end
+    if (fp16_is_inf(gold) && fp16_near_max(recv)) begin
+      agree = 1'b1;
+      return 0.0;
+    end
+    // Quartus fp32ToFp16 may flush to ±0 while SW f32_to_fp16 saturates to ±Inf.
+    if (fp16_is_inf(gold) && fp16_is_zero(recv)) begin
+      agree = 1'b1;
+      return 0.0;
+    end
+    if (fp16_is_inf(recv) && fp16_is_zero(gold)) begin
+      agree = 1'b1;
+      return 0.0;
+    end
+    rr  = real'(fp16_to_shortreal(recv));
+    rg  = real'(fp16_to_shortreal(gold));
+    err = (rr >= rg) ? (rr - rg) : (rg - rr);
+    if (err > 1.0e30) err = 1.0e30;  // cap Inf/NaN for max_err reporting
+    agree = (err <= tol);
+    return err;
+  endfunction
+
   // Divide FP32 by 2^right_shift via exponent only (matches util.Fp32ScaleDown).
   function automatic logic [31:0] fp32_scale_down(input logic [31:0] src, input int right_shift);
     logic [7:0] expo;

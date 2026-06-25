@@ -56,7 +56,7 @@ emb_row_base(token_id) = EMB_BASE + token_id * ROW_BYTES
 | 1 | `0x0000_1000` |
 | 128255 | `0x1F4FF000` |
 
-完整 DDR 全局 map 见 [ddr-memory-map.md](../../common/doc/ddr-memory-map.md)。
+完整 DDR 全局 map 见 [ddr-memory-map.md](../../ddrMemoryMap/doc/ddr-memory-map.md)。
 
 ---
 
@@ -121,7 +121,7 @@ ARM 写 token_id
     → RmsNorm.dataOut → 后续 Attention
 ```
 
-γ 的 DDR 布局见 [ddr-memory-map.md](../../common/doc/ddr-memory-map.md) §4。
+γ 的 DDR 布局见 [ddr-memory-map.md](../../ddrMemoryMap/doc/ddr-memory-map.md) §4。
 
 ---
 

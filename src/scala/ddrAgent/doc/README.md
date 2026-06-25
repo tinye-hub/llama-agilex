@@ -21,14 +21,16 @@
 
 ```bash
 make -C tools/ddr_pack pack-m1
-make -C src/scala/ddrAgent sim          # Verilator
-make -C src/scala/ddrAgent questa-m1    # Questa (需 set_env.sh + questacoreprime)
+make -C src/scala/ddrAgent verilator    # Verilator（彩色 PASS：sbt-runmain.sh）
+make -C src/scala/ddrAgent questa       # Questa (需 set_env.sh + questacoreprime)
 ```
 
 默认 preload：`tools/ddr_pack/out/ddr_image_m1.bin`（可用 `DDR_IMAGE` 覆盖）。  
-Verilator 仿真用 64-bit AXI；Questa / 综合默认 256-bit（`make verilog AXI_WIDTH=256`）。
+Verilator 用 64-bit AXI；Questa / 综合默认 256-bit（`make verilog AXI_WIDTH=256`）。
+
+约定：[simulation-conventions.md](../../doc/simulation-conventions.md)
 
 ## 相关文档
 
 - [llama-m1-top-design.md](../../top/doc/llama-m1-top-design.md)
-- [top/test/questa/README.md](../../top/test/questa/README.md) — 端到端 M1 毕业
+- [top/test/questa/README.md](../../top/test/questa/README.md) — 端到端 M1 毕业（`make questa`）

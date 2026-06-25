@@ -5,7 +5,7 @@
 >
 > Token Embedding 查表语义见 [token-embedding-design.md](../../tokenEmbed/doc/token-embedding-design.md)。  
 > DDR 命令翻译与 AXI master 见 [ddr-agent-design.md](../../ddrAgent/doc/ddr-agent-design.md)。  
-> **DDR 地址规划**见 [ddr-memory-map.md](../../common/doc/ddr-memory-map.md)。
+> **DDR 地址规划**见 [ddr-memory-map.md](../../ddrMemoryMap/doc/ddr-memory-map.md)。
 
 **主线配置**：Agilex 5E 013B，1K context，W4A16，KV FP16，Plan A。
 
@@ -134,7 +134,7 @@ void run_one_token(uint32_t token_id, uint32_t seq_pos, job_phase_t phase) {
 
 ## 5. MemCmd 生成（Scheduler → DdrAgent）
 
-格式见 [ddr-agent-design.md](../../ddrAgent/doc/ddr-agent-design.md)。地址常量见 [ddr-memory-map.md](../../common/doc/ddr-memory-map.md)。
+格式见 [ddr-agent-design.md](../../ddrAgent/doc/ddr-agent-design.md)。地址常量见 [ddr-memory-map.md](../../ddrMemoryMap/doc/ddr-memory-map.md)。
 
 ### 5.1 Embedding 查表
 
@@ -225,7 +225,7 @@ Tend: dataOut tlast → job_done
 | 3 | 等待双 `MemDone` + `WAIT_RMSNORM` | ✓ |
 | 4 | `job_done` / 错误回报（`errorCode=1` OOB） | ✓ |
 
-集成验证：`top/make sim`（控制流）、`top/make questa-m1`（FP golden）。
+集成验证：`top/make verilator`（控制流）、`top/make questa`（FP golden）。见 [simulation-conventions.md](../../doc/simulation-conventions.md)。
 
 ### 后续
 
@@ -247,5 +247,5 @@ llamaScheduler/
 │   └── LlamaSchedulerM1.scala
 ├── test/
 │   └── LlamaSchedulerM1Sim.scala
-└── Makefile                # make sim
+└── Makefile                # make verilator
 ```

@@ -2,6 +2,8 @@
 
 M1 毕业考试：`LlamaM1Top` 端到端仿真，含真实 Quartus Agilex 5 浮点 IP（`altera_fp_functions` + `agilex_native_floating_point_dsp`），数值精度可验证。
 
+仿真命名与 `WAVE`/`VIEW` 约定见 [simulation-conventions.md](../../../doc/simulation-conventions.md)。
+
 ## 为什么必须用 Questa
 
 Verilator **不支持**仿真 Quartus Agilex IP 黑盒子。
@@ -29,10 +31,11 @@ Simlib 必须在 `simlib/quartus2025_1_1_agilex5_questa2024_3/`（由 `quartus_s
 
 ```bash
 cd src/scala/top
-make questa-m1           # NC_RUN 自动读取 set_env.sh
-make questa-m1-wave      # 带波形 (QUESTA_WAVE=1)
-make questa-m1 NC_RUN=   # 本地 Questa license
-make questa-wave NC_RUN= # 在 GUI 中打开波形
+make questa              # NC_RUN 自动读取 set_env.sh
+make questa WAVE=1       # 录制 WLF
+make questa VIEW=1       # Questa GUI 打开波形（需 DISPLAY）
+make questa NC_RUN=      # 本地 Questa license
+make verilator           # 控制流 only（彩色 PASS 见 sbt-runmain.sh）
 ```
 
 ## 文件说明

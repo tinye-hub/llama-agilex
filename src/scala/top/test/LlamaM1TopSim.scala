@@ -1,6 +1,6 @@
 package top
 
-import common.DdrMemoryMap
+import ddrMemoryMap.DdrMemoryMap
 import ddrAgent.SimDdrImage
 import llamaScheduler.HpsJobCtrl
 import spinal.core._
@@ -17,9 +17,9 @@ import scala.language.postfixOps
  * Verifies: AXI4-Lite job_start → Scheduler FSM → DdrAgent AXI read → RmsNormAxiTop pipeline →
  * 2048 rmsNormOut beats → job_done.
  *
- * NOTE: FP numerical accuracy is tested separately with Questa (real Quartus IP BlackBoxes).
- * Verilator uses timing-only stubs (IntelFloatIPFlowIOSim) whose outputs are 0 by design;
- * this test only verifies control/handshake correctness.
+ * NOTE: FP numerical accuracy is tested with Questa (`make questa`).
+ * Verilator (`make verilator`) uses timing-only stubs; colored PASS/FAIL comes from
+ * scripts/sbt-runmain.sh — see doc/simulation-conventions.md.
  *
  * Preload: `tools/ddr_pack/out/ddr_image_m1.bin` (or DDR_IMAGE env).
  */
@@ -133,7 +133,6 @@ object LlamaM1TopSim extends App {
     assert(!dut.io.rmsNormOut.valid.toBoolean, "unexpected rmsNormOut.valid on OOB path")
     println(f"LlamaM1TopSim test2 PASS: OOB job_error=1, errorCode=$errCode")
 
-    println("\u001b[32m********** PASS **********\u001b[0m")
     simSuccess()
   }
 }

@@ -19,6 +19,6 @@
 
 ## 相关文档
 
-- [ddr-memory-map.md](../../common/doc/ddr-memory-map.md)
+- [ddr-memory-map.md](../../ddrMemoryMap/doc/ddr-memory-map.md)
 - [llama-m1-top-design.md](../../top/doc/llama-m1-top-design.md)
 - [top/test/questa/README.md](../../top/test/questa/README.md)

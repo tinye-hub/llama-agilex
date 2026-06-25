@@ -13,5 +13,5 @@ rmsNorm/
 ├── test/      仿真 testbench（Verilator）
 ├── gen/       生成物（Verilog、仿真工作区，不入库）
 ├── quartus/   本模块独立 Quartus 工程（仅综合/FIT/STA，不生成 bitstream）
-└── Makefile   verilog / sim / quartus 入口
+└── Makefile   verilog / verilator / questa / quartus 入口
 ```

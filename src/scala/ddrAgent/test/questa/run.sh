@@ -3,7 +3,7 @@
 #
 # Prerequisites:
 #   source <repo>/set_env.sh   (questacoreprime)
-#   make questa-m1               (verilog + sim)
+#   make questa                  (verilog + sim)
 #
 # Usage:
 #   ./run.sh compile

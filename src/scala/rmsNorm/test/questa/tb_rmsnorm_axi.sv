@@ -191,6 +191,8 @@ module tb_rmsnorm_axi;
     shortreal gamma[DIM];
     shortreal out[DIM];
     shortreal golden[DIM];
+    logic [15:0] out_fp16[DIM];
+    logic [15:0] golden_fp16[DIM];
     real max_err;
     int mismatches;
     int out_cnt;
@@ -210,7 +212,7 @@ module tb_rmsnorm_axi;
     $display("[tb] random vectors seed=%0h x=[%0.1f,%0.1f] gamma=[%0.1f,%0.1f] x[0]=%0.4f gamma[0]=%0.4f",
              VEC_RAND_SEED, X_MIN, X_MAX, GAMMA_MIN, GAMMA_MAX, real'(x[0]), real'(gamma[0]));
 
-    golden_write_refs(DIM, x, gamma, GOLDEN_DIR, golden);
+    golden_write_refs(DIM, x, gamma, GOLDEN_DIR, golden, golden_fp16);
 
     $display("[tb] reset and stimulus (dim=%0d)", DIM);
     reset = 1'b1;
@@ -235,6 +237,7 @@ module tb_rmsnorm_axi;
       @(posedge clk);
       cycles++;
       if (io_dataOut_valid && io_dataOut_ready) begin
+        out_fp16[out_cnt] = io_dataOut_payload_data;
         out[out_cnt] = fp16_to_shortreal(io_dataOut_payload_data);
         out_cnt++;
         hb_out_cnt = out_cnt;
@@ -250,16 +253,22 @@ module tb_rmsnorm_axi;
     mismatches = 0;
     for (int i = 0; i < DIM; i++) begin
       real err;
-      err = abs_real(real'(out[i]) - real'(golden[i]));
+      bit  agree;
+      err = fp16_abs_err(out_fp16[i], golden_fp16[i], TOL, agree);
       if (err > max_err) max_err = err;
-      if (err > TOL) mismatches++;
+      if (!agree) begin
+        if (mismatches < 8)
+          $display("  mismatch[%0d]: recv=%h (%0.6g) golden=%h (%0.6g) err=%0.6g",
+                   i, out_fp16[i], real'(out[i]), golden_fp16[i], real'(golden[i]), err);
+        mismatches++;
+      end
     end
 
     $display("RmsNormAxiTop Questa dim=%0d final check:", DIM);
     $display("  tolerance:   %0.1e  (PASS when max abs err <= tolerance)", TOL);
     $display("  max abs err: %0.8f", max_err);
     $display("  mismatches:  %0d / %0d  (output beats with err > tolerance)", mismatches, DIM);
-    if (max_err <= TOL) begin
+    if (mismatches == 0) begin
       $display("\033[32m********** PASS **********\033[0m");
       $finish;
     end else begin

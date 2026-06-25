@@ -1,9 +1,9 @@
-package common
+package ddrMemoryMap
 
 /**
  * DDR logical address map for Llama 3.2 1B Plan A (DE25-Nano).
  *
- * Authoritative spec: `common/doc/ddr-memory-map.md`
+ * Authoritative spec: `ddrMemoryMap/doc/ddr-memory-map.md`
  *
  * Constants are logical byte offsets in the PL model window (`0x0000_0000` .. `0x7FFF_FFFF`).
  * On DE25-Nano the active 1 GiB mirror (`0x0` .. `0x3FFF_FFFF`) is backed by LPDDR4B;

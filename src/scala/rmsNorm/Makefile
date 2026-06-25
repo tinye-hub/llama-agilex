@@ -1,7 +1,8 @@
 # rmsNorm module — run from: src/scala/rmsNorm/
 #
 #   make verilog          Spinal -> gen/verilog/
-#   make sim              Verilator (core + AXI), DIM=2048
+#   make verilator        Verilator smoke (core + AXI control-flow; FP via questa)
+#   make questa           Questa + real Quartus FP IPs (FP golden)
 #   make quartus          syn + fit + sta (no bitstream)
 #   make quartus-report   print fit resource summary
 
@@ -27,58 +28,63 @@ QUESTA_DIR  := test/questa
 QUESTA_WORK := $(QUESTA_DIR)/work
 QUESTA_WLF  := $(QUESTA_WORK)/tb_rmsnorm_axi.wlf
 
-# WAVE=1 on questa-axi / questa-axi-wave records $(QUESTA_WLF) (large; slow).
+# WAVE=1 on questa records $(QUESTA_WLF) (large; slow).
 ifeq ($(WAVE),1)
 export QUESTA_WAVE := 1
 endif
 
-.PHONY: all help verilog sim sim-core sim-axi \
-	questa-compile questa-axi questa-axi-wave questa-wave \
-	quartus quartus-report quartus-all clean clean-sim clean-quartus clean-questa
+.PHONY: all help verilog verilator verilator-core verilator-axi \
+	questa-compile questa questa-run questa-view \
+	quartus quartus-report quartus-all clean clean-verilator clean-quartus clean-questa
 
 all: verilog
 
 help:
 	@echo "rmsNorm Makefile (cwd=$(CURDIR))"
-	@echo "  verilog         RMSNORM_DIM=$(DIM) -> gen/verilog/RmsNormAxiTop.v"
-	@echo "  sim             Verilator RMSNORM_SIM_DIM=$(DIM)"
-	@echo "  questa-axi       verilog + Questa (dim=$(DIM))"
-	@echo "  questa-axi-wave  same + WLF $(QUESTA_WLF) (or: make questa-axi WAVE=1)"
-	@echo "  questa-wave      Open $(QUESTA_WLF) in Questa GUI ($(NC_RUN_GUI) vsim -view)"
+	@echo "  verilog          RMSNORM_DIM=$(DIM) -> gen/verilog/RmsNormAxiTop.v"
+	@echo "  verilator        Verilator smoke (control-flow; FP golden -> questa)"
+	@echo "  questa           verilog + Questa FP golden (dim=$(DIM))"
+	@echo "  questa WAVE=1    questa + WLF $(QUESTA_WLF)"
+	@echo "  questa VIEW=1    Open $(QUESTA_WLF) in Questa GUI ($(NC_RUN_GUI) vsim -view)"
 	@echo "  questa-compile   Questa compile only"
-	@echo "  quartus         Quartus syn+fit+sta (no .sof/.rbf)"
-	@echo "  quartus-report  Fit + STA summary table"
-	@echo "  quartus-all     quartus + quartus-report"
+	@echo "  quartus          Quartus syn+fit+sta (no .sof/.rbf)"
+	@echo "  quartus-report   Fit + STA summary table"
+	@echo "  quartus-all      quartus + quartus-report"
 	@echo ""
 	@echo "  NC_RUN:     $(if $(NC_RUN),$(NC_RUN),(empty — local run))"
 	@echo "  NC_RUN_GUI: $(if $(NC_RUN_GUI),$(NC_RUN_GUI),(empty — local run))"
-	@echo "  Batch EDA:  source ../../../set_env.sh  then make quartus / questa-axi"
+	@echo "  Batch EDA:  source ../../../set_env.sh  then make quartus / questa"
+	@echo "  Sim policy:  ../doc/simulation-conventions.md"
 	@echo "  clean           Remove gen/verilog, gen/sim, quartus build dirs"
 
 verilog:
 	cd $(SCALA_ROOT) && RMSNORM_DIM=$(DIM) $(SBT) "runMain rmsNorm.RmsNormGen"
 
-sim-core: clean-sim
-	cd $(SCALA_ROOT) && RMSNORM_SIM_DIM=$(DIM) $(SBT) "runMain rmsNorm.RmsNormCoreSim"
+verilator-core: clean-verilator
+	cd $(SCALA_ROOT) && RMSNORM_SIM_DIM=$(DIM) $(SCALA_ROOT)/scripts/sbt-runmain.sh rmsNorm.RmsNormCoreSim
 
-sim-axi:
-	cd $(SCALA_ROOT) && RMSNORM_SIM_DIM=$(DIM) $(SBT) "runMain rmsNorm.RmsNormAxiTopSim"
+verilator-axi:
+	cd $(SCALA_ROOT) && RMSNORM_SIM_DIM=$(DIM) $(SCALA_ROOT)/scripts/sbt-runmain.sh rmsNorm.RmsNormAxiTopSim
 
-sim: sim-core sim-axi
+verilator: verilator-core verilator-axi
 
 questa-compile: verilog
 	cd test/questa && RMSNORM_DIM=$(DIM) $(NC_RUN) ./run.sh compile
 
-questa-axi: verilog
-	cd $(QUESTA_DIR) && RMSNORM_DIM=$(DIM) $(NC_RUN) ./run.sh axi
+ifeq ($(VIEW),1)
+questa: questa-view
+else
+questa: questa-run
+endif
 
-questa-axi-wave: verilog
+questa-run: verilog
 	cd $(QUESTA_DIR) && RMSNORM_DIM=$(DIM) \
-	  QUESTA_WAVE=1 QUESTA_WLF="$(abspath $(QUESTA_WLF))" $(NC_RUN) ./run.sh axi
+	  $(if $(filter 1,$(WAVE)),QUESTA_WLF="$(abspath $(QUESTA_WLF))",) \
+	  $(NC_RUN) ./run.sh axi
 
-questa-wave:
+questa-view:
 	@test -f $(QUESTA_WLF) || { \
-	  echo "Missing $(QUESTA_WLF) — run: make questa-axi-wave"; exit 1; }
+	  echo "Missing $(QUESTA_WLF) — run: make questa WAVE=1"; exit 1; }
 	cd $(dir $(abspath $(QUESTA_WLF))) && \
 	  $(NC_RUN_GUI) vsim -view $(notdir $(QUESTA_WLF))
 
@@ -115,7 +121,7 @@ quartus-report:
 
 quartus-all: quartus quartus-report
 
-clean-sim:
+clean-verilator:
 	rm -rf gen/sim
 
 clean-quartus:
@@ -124,5 +130,5 @@ clean-quartus:
 	       quartus/qdb quartus/dni quartus/default.qsf quartus/default.*.rpt \
 	       quartus/*.qsf.backup
 
-clean: clean-sim clean-quartus clean-questa
+clean: clean-verilator clean-quartus clean-questa
 	rm -rf gen/verilog

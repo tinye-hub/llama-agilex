@@ -1,8 +1,10 @@
-# common 公共定义
+# ddrMemoryMap — DDR 地址规划
 
 | 文件 | 说明 |
 |:---|:---|
 | [ddr-memory-map.md](ddr-memory-map.md) | **DDR 全局地址规划**（文档规格） |
+
+全仓库仿真约定见 [simulation-conventions.md](../../doc/simulation-conventions.md)。
 
 ## 三层用法（不重复生成）
 
@@ -25,7 +27,7 @@
 ## RTL 生成
 
 ```bash
-cd src/scala/common && make sv
+cd src/scala/ddrMemoryMap && make sv
 ```
 
 ```systemverilog
@@ -35,3 +37,7 @@ logic [31:0] addr;
 addr = emb_row_base(token_id);
 addr = gamma_addr(4'd0, NORM_KIND_NORM1);
 ```
+
+## 仿真（其他模块）
+
+`ddrMemoryMap/` 无本地 testbench。集成仿真见 [simulation-conventions.md](../../doc/simulation-conventions.md) 与 `top/`、`rmsNorm/` Makefile。

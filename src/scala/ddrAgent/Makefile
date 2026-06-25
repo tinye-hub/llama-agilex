@@ -1,8 +1,11 @@
 # ddrAgent — run from: src/scala/ddrAgent/
 #
 #   make verilog       Spinal -> gen/verilog/
-#   make sim           Verilator DdrAgentM1Sim
-#   make questa-m1     Questa DdrAgentM1 + file-backed AXI DDR
+#   make verilator     Verilator DdrAgentM1Sim (64-bit AXI)
+#   make questa        Questa DdrAgentM1 + file-backed AXI DDR (256-bit default)
+#
+# Questa variants:  make questa WAVE=1   |   make questa VIEW=1   |   make questa DEBUG=1
+# Verilator PASS/FAIL colors: scripts/sbt-runmain.sh (see doc/simulation-conventions.md)
 
 SCALA_ROOT := $(abspath ..)
 REPO_ROOT  := $(abspath ../../..)
@@ -29,66 +32,64 @@ ifeq ($(WAVE),1)
 export QUESTA_WAVE := 1
 endif
 
-.PHONY: all help verilog sim questa-compile questa-m1 questa-m1-wave questa-wave \
-	clean clean-sim clean-questa
+.PHONY: all help verilog verilator questa-compile questa questa-run questa-view \
+	clean clean-verilator clean-questa
 
-all: sim
+all: verilator
 
 help:
 	@echo "ddrAgent Makefile (cwd=$(CURDIR))"
 	@echo "  verilog          AXI_WIDTH=$(AXI_WIDTH) -> gen/verilog/DdrAgentM1.v"
-	@echo "  sim              Verilator DdrAgentM1Sim (64-bit AXI, DDR_IMAGE=$(DDR_IMAGE))"
-	@echo "  questa-m1        verilog + Questa (AXI_WIDTH=$(AXI_WIDTH))"
-	@echo "  questa-m1-debug  questa-m1 +DDR_AGENT_DEBUG (verbose AXI/state log)"
-	@echo "  questa-m1-wave   same + WLF $(QUESTA_WLF) (or: make questa-m1 WAVE=1)"
-	@echo "  questa-wave      Open $(QUESTA_WLF) in Questa GUI ($(NC_RUN_GUI) vsim -view)"
+	@echo "  verilator        Verilator DdrAgentM1Sim (64-bit AXI, DDR_IMAGE=$(DDR_IMAGE))"
+	@echo "  questa           verilog + Questa (AXI_WIDTH=$(AXI_WIDTH))"
+	@echo "  questa DEBUG=1   questa + verbose AXI/state log (DDR_AGENT_DEBUG)"
+	@echo "  questa WAVE=1    questa + WLF $(QUESTA_WLF)"
+	@echo "  questa VIEW=1    Open $(QUESTA_WLF) in Questa GUI ($(NC_RUN_GUI) vsim -view)"
 	@echo "  questa-compile   Questa compile only"
 	@echo "  clean            remove gen/"
 	@echo ""
 	@echo "  NC_RUN:     $(if $(NC_RUN),$(NC_RUN),(empty — local run))"
-	@echo "  Batch EDA:  source ../../../set_env.sh  then make questa-m1"
+	@echo "  Batch EDA:  source ../../../set_env.sh  then make questa"
+	@echo "  Sim policy:  ../doc/simulation-conventions.md"
 
 verilog:
 	cd $(SCALA_ROOT) && DDR_AGENT_AXI_WIDTH=$(AXI_WIDTH) $(SBT) "runMain ddrAgent.DdrAgentM1Gen"
 
-sim: clean-sim
+verilator: clean-verilator
 	@test -f "$(DDR_IMAGE)" || { \
 	  echo "Missing $(DDR_IMAGE) — run: make -C $(REPO_ROOT)/tools/ddr_pack pack-m1"; exit 1; }
-	cd $(SCALA_ROOT) && DDR_IMAGE="$(DDR_IMAGE)" $(SBT) "runMain ddrAgent.DdrAgentM1Sim"
+	cd $(SCALA_ROOT) && DDR_IMAGE="$(DDR_IMAGE)" \
+	  $(SCALA_ROOT)/scripts/sbt-runmain.sh ddrAgent.DdrAgentM1Sim
 
 questa-compile: verilog
 	cd $(QUESTA_DIR) && DDR_AGENT_AXI_WIDTH=$(AXI_WIDTH) DDR_IMAGE="$(DDR_IMAGE)" \
 	  $(NC_RUN) ./run.sh compile
 
-questa-m1: verilog
+ifeq ($(VIEW),1)
+questa: questa-view
+else
+questa: questa-run
+endif
+
+questa-run: verilog
 	@test -f "$(DDR_IMAGE)" || { \
 	  echo "Missing $(DDR_IMAGE) — run: make -C $(REPO_ROOT)/tools/ddr_pack pack-m1"; exit 1; }
 	cd $(QUESTA_DIR) && DDR_AGENT_AXI_WIDTH=$(AXI_WIDTH) DDR_IMAGE="$(DDR_IMAGE)" \
+	  $(if $(filter 1,$(WAVE)),QUESTA_WLF="$(abspath $(QUESTA_WLF))",) \
+	  $(if $(filter 1,$(DEBUG)),DDR_AGENT_DEBUG=1,) \
 	  $(NC_RUN) ./run.sh m1
 
-questa-m1-debug: verilog
-	@test -f "$(DDR_IMAGE)" || { \
-	  echo "Missing $(DDR_IMAGE) — run: make -C $(REPO_ROOT)/tools/ddr_pack pack-m1"; exit 1; }
-	cd $(QUESTA_DIR) && DDR_AGENT_AXI_WIDTH=$(AXI_WIDTH) DDR_IMAGE="$(DDR_IMAGE)" \
-	  DDR_AGENT_DEBUG=1 $(NC_RUN) ./run.sh m1
-
-questa-m1-wave: verilog
-	@test -f "$(DDR_IMAGE)" || { \
-	  echo "Missing $(DDR_IMAGE) — run: make -C $(REPO_ROOT)/tools/ddr_pack pack-m1"; exit 1; }
-	cd $(QUESTA_DIR) && DDR_AGENT_AXI_WIDTH=$(AXI_WIDTH) DDR_IMAGE="$(DDR_IMAGE)" \
-	  QUESTA_WAVE=1 QUESTA_WLF="$(abspath $(QUESTA_WLF))" $(NC_RUN) ./run.sh m1
-
-questa-wave:
+questa-view:
 	@test -f $(QUESTA_WLF) || { \
-	  echo "Missing $(QUESTA_WLF) — run: make questa-m1-wave"; exit 1; }
+	  echo "Missing $(QUESTA_WLF) — run: make questa WAVE=1"; exit 1; }
 	cd $(dir $(abspath $(QUESTA_WLF))) && \
 	  $(NC_RUN_GUI) vsim -view $(notdir $(QUESTA_WLF))
 
-clean-sim:
+clean-verilator:
 	rm -rf gen/sim 2>/dev/null || true
 
 clean-questa:
 	rm -rf test/questa/work test/questa/transcript test/questa/etch*
 
-clean: clean-sim clean-questa
+clean: clean-verilator clean-questa
 	rm -rf gen/verilog

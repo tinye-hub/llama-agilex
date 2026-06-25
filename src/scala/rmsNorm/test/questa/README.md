@@ -1,4 +1,4 @@
-# RMSNorm Questa simulation
+仿真命名与 `WAVE`/`VIEW` 见 [simulation-conventions.md](../../doc/simulation-conventions.md)。
 
 Gate-level / IP-accurate simulation of `RmsNormAxiTop` with real Quartus FP IPs
 (`quartus_ip/`) and precompiled Agilex 5 device libraries.
@@ -22,23 +22,22 @@ License tools run on batch nodes via `NC_RUN` (see repo `set_env.sh`; no `-Ix` �
 ```bash
 source set_env.sh
 cd src/scala/rmsNorm
-make questa-axi       # wraps: $NC_RUN ./run.sh axi
+make questa       # wraps: $NC_RUN ./run.sh axi
 ```
 
 Direct (only if the node has Questa license):
 
 ```bash
-make questa-axi NC_RUN=
+make questa NC_RUN=
 # or: cd test/questa && ./run.sh axi
 ```
 
 ```bash
-make questa-axi-wave              # records test/questa/work/tb_rmsnorm_axi.wlf
-make questa-axi WAVE=1            # equivalent
-make questa-wave NC_RUN=          # Questa GUI (needs DISPLAY)
+make questa WAVE=1                # records test/questa/work/tb_rmsnorm_axi.wlf
+make questa VIEW=1 NC_RUN=          # Questa GUI (needs DISPLAY)
 ```
 
-`QUESTA_WLF` overrides the default WLF path. Waveform logging uses `vsim -wlf` + `log -r /*` (large, slower than plain `questa-axi`).
+`QUESTA_WLF` overrides the default WLF path. Waveform logging uses `vsim -wlf` + `log -r /*` (large, slower than plain `make questa`).
 
 Working directory: `test/questa/work/` (created automatically; safe to delete).
 
@@ -55,5 +54,6 @@ Working directory: `test/questa/work/` (created automatically; safe to delete).
 ## Notes
 
 - Default vector length is **2048** everywhere (`make verilog`, Questa TB `DIM`, Verilator `RMSNORM_SIM_DIM`).
-- To use another dim: `make verilog DIM=<n>` and `make questa-axi DIM=<n>` (TB picks up `+define+RMSNORM_DIM=<n>`).
+- To use another dim: `make verilog DIM=<n>` and `make questa DIM=<n>` (TB picks up `+define+RMSNORM_DIM=<n>`).
+- Control-flow only (no FP golden): `make verilator`.
 - First compile can take several minutes (VHDL FP functions + large DUT).

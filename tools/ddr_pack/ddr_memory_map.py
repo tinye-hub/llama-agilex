@@ -1,7 +1,7 @@
 """
-DDR logical address map — Python mirror of src/scala/common/DdrMemoryMap.scala.
+DDR logical address map — Python mirror of src/scala/ddrMemoryMap/DdrMemoryMap.scala.
 
-Authoritative spec: src/scala/common/doc/ddr-memory-map.md
+Authoritative spec: src/scala/ddrMemoryMap/doc/ddr-memory-map.md
 """
 
 from __future__ import annotations

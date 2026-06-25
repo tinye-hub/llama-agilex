@@ -11,4 +11,4 @@ export VERILATOR_REAL_MAKE="${VERILATOR_REAL_MAKE:-/usr/bin/make}"
 echo "RMSNORM_SIM_DIM=$RMSNORM_SIM_DIM"
 command -v verilator >/dev/null && verilator --version | head -1 || true
 
-make -C rmsNorm sim SIM_DIM="$RMSNORM_SIM_DIM"
+make -C rmsNorm verilator DIM="$RMSNORM_SIM_DIM"

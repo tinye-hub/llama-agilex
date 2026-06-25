@@ -10,7 +10,7 @@
 
 | 模块 | 文档 | 职责 |
 |:---|:---|:---|
-| DDR 地址规划 | [ddr-memory-map.md](../../common/doc/ddr-memory-map.md) | 全局 map、γ 区 `0x1F50_0000` |
+| DDR 地址规划 | [ddr-memory-map.md](../../ddrMemoryMap/doc/ddr-memory-map.md) | 全局 map、γ 区 `0x1F50_0000` |
 | LlamaScheduler | [llama-scheduler-design.md](../../llamaScheduler/doc/llama-scheduler-design.md) | `MemCmd` 生成、FSM |
 | DdrAgent | [ddr-agent-design.md](../../ddrAgent/doc/ddr-agent-design.md) | `EMBED_ROW` / `RMS_GAMMA` sink |
 | RmsNorm | [rms-norm-module-design.md](../../rmsNorm/doc/rms-norm-module-design.md) | 归一化计算 |

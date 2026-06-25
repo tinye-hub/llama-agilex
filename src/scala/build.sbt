@@ -13,6 +13,8 @@ lazy val llamaAgilex = (project in file("."))
     Compile / scalaSource := baseDirectory.value,
     libraryDependencies ++= Seq(spinalCore, spinalLib, spinalIdsl),
     fork := true,
+    run / javaOptions += "-Dscala.color=true",
+    run / envVars += ("FORCE_COLOR" -> "1"),
     // `scripts/make` patches Spinal Verilator JNI wrapper for Verilator 5.036+ (WData typedef).
     run / envVars ++= {
       val scripts = (baseDirectory.value / "scripts").getAbsolutePath

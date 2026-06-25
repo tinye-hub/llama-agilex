@@ -383,7 +383,7 @@ module tb_ddr_agent_m1;
 
     initial begin
         if (!$value$plusargs("DDR_IMAGE=%s", ddr_image_path))
-            $fatal(1, "DDR_IMAGE plusarg missing — run via make questa-m1 or ./run.sh m1");
+            $fatal(1, "DDR_IMAGE plusarg missing — run via make questa or ./run.sh m1");
 
         // Drive all DUT inputs before reset release (same as DdrAgentM1Sim.scala).
         io_memCmd_valid           = 1'b0;

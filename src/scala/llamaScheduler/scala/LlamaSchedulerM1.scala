@@ -3,7 +3,7 @@ package llamaScheduler
 import spinal.core._
 import spinal.lib._
 import ddrAgent.{DdrSinkId, MemCmd, MemCmdType, MemDone}
-import common.DdrMemoryMap
+import ddrMemoryMap.DdrMemoryMap
 
 /** Latched HPS job snapshot (one token inference). */
 case class JobSnapshot() extends Bundle {

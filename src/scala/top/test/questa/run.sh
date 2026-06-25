@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Questa simulation for LlamaM1Top — APB + DdrAgent + RmsNormAxiTop with real Quartus FP IPs.
+# Questa simulation for LlamaM1Top — AXI4-Lite + DdrAgent + RmsNormAxiTop with real Quartus FP IPs.
 #
 # Prerequisites:
 #   source <repo>/activate.sh        (quartus + questacoreprime)
 #   make verilog (from src/scala/top) → top/gen/verilog/LlamaM1Top.v
+#   make questa                      (or ./run.sh m1)
 #   tools/ddr_pack/out/ddr_image_m1.bin
 #   simlib at simlib/quartus2025_1_1_agilex5_questa2024_3/
 #

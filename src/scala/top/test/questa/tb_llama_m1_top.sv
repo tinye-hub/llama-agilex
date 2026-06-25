@@ -4,7 +4,7 @@
 //   Test 2 (OOB):        token_id=vocabSize → job_error=1, errorCode=1, no DDR read, no output.
 //
 // Requires: Quartus Agilex 5 FP IPs (altera_fp_functions, agilex_native_floating_point_dsp).
-// Run: make questa-m1 (from src/scala/top/)
+// Run: make questa (from src/scala/top/)
 
 `timescale 1ns/1ps
 
@@ -369,7 +369,7 @@ module tb_llama_m1_top;
     // -------------------------------------------------------------------------
     initial begin
         if (!$value$plusargs("DDR_IMAGE=%s", ddr_image_path))
-            $fatal(1, "DDR_IMAGE plusarg missing — run via make questa-m1");
+            $fatal(1, "DDR_IMAGE plusarg missing — run via make questa");
 
         // Init DUT inputs before reset
         io_hps_aw_valid           = 1'b0;

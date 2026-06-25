@@ -1,6 +1,6 @@
 package ddrAgent
 
-import common.DdrMemoryMap
+import ddrMemoryMap.DdrMemoryMap
 import spinal.core._
 import spinal.lib._
 import spinal.lib.bus.amba4.axis._

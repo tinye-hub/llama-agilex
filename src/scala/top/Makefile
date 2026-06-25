@@ -2,11 +2,14 @@
 #
 #   make verilog          Spinal -> gen/verilog/LlamaM1Top.v  (Quartus FP IP, 256-bit AXI)
 #   make verilog-sim      same with RmsNorm sim stubs (no Quartus black boxes)
-#   make questa-m1        M1 graduation test: Questa + real FP IPs + FP golden check
-#   make sim              Verilator smoke test (control-flow only, FP values = 0 by design)
+#   make verilator        Verilator control-flow smoke (FP via questa)
+#   make questa           Questa M1 graduation: real FP IPs + FP golden
+#
+# Questa variants:  make questa WAVE=1   |   make questa VIEW=1
+# Verilator PASS/FAIL colors: scripts/sbt-runmain.sh (see doc/simulation-conventions.md)
 #
 # NOTE: Verilator cannot simulate Quartus Agilex IP blackboxes.
-#       FP numerical accuracy MUST be verified via questa-m1 (Questa + real IPs).
+#       FP numerical accuracy MUST be verified via questa (Questa + real IPs).
 #       See .cursor/rules/questa-simulation.mdc for details.
 
 SCALA_ROOT  := $(abspath ..)
@@ -32,8 +35,8 @@ ifeq ($(WAVE),1)
 export QUESTA_WAVE := 1
 endif
 
-.PHONY: all help verilog verilog-sim questa-compile questa-m1 questa-m1-wave questa-wave \
-        sim clean clean-sim clean-questa
+.PHONY: all help verilog verilog-sim questa-compile questa questa-run questa-view \
+        verilator clean clean-verilator clean-questa
 
 all: verilog
 
@@ -41,14 +44,16 @@ help:
 	@echo "top Makefile (cwd=$(CURDIR))"
 	@echo "  verilog          -> gen/verilog/LlamaM1Top.v (Quartus FP IP, 256-bit AXI)"
 	@echo "  verilog-sim      -> gen/verilog/LlamaM1Top.v (timing stubs, no real FP)"
-	@echo "  questa-m1        verilog + Questa M1 graduation test (FP golden check)"
-	@echo "  questa-m1-wave   questa-m1 + waveform $(QUESTA_WLF)"
-	@echo "  questa-wave      Open $(QUESTA_WLF) in Questa GUI"
-	@echo "  sim              Verilator control-flow smoke test (NO FP accuracy)"
+	@echo "  verilator        Verilator control-flow smoke (FP golden -> questa)"
+	@echo "  questa           verilog + Questa M1 graduation (FP golden check)"
+	@echo "  questa WAVE=1    questa + WLF $(QUESTA_WLF)"
+	@echo "  questa VIEW=1    Open $(QUESTA_WLF) in Questa GUI ($(NC_RUN_GUI) vsim -view)"
+	@echo "  questa-compile   Questa compile only"
 	@echo "  clean            remove gen/"
 	@echo ""
 	@echo "  NC_RUN:     $(if $(NC_RUN),$(NC_RUN),(empty — local run))"
 	@echo "  DDR_IMAGE:  $(DDR_IMAGE)"
+	@echo "  Sim policy:  ../doc/simulation-conventions.md"
 
 verilog:
 	cd $(SCALA_ROOT) && LLAMA_M1_DIM=$(DIM) LLAMA_M1_GEN_DIR=top/gen/verilog \
@@ -61,33 +66,36 @@ verilog-sim:
 questa-compile: verilog
 	cd $(QUESTA_DIR) && DDR_IMAGE="$(DDR_IMAGE)" $(NC_RUN) ./run.sh compile
 
-questa-m1: verilog
+ifeq ($(VIEW),1)
+questa: questa-view
+else
+questa: questa-run
+endif
+
+questa-run: verilog
 	@test -f "$(DDR_IMAGE)" || { \
 	  echo "Missing $(DDR_IMAGE) — run: make -C $(REPO_ROOT)/tools/ddr_pack pack-m1"; exit 1; }
-	cd $(QUESTA_DIR) && DDR_IMAGE="$(DDR_IMAGE)" $(NC_RUN) ./run.sh m1
+	cd $(QUESTA_DIR) && DDR_IMAGE="$(DDR_IMAGE)" \
+	  $(if $(filter 1,$(WAVE)),QUESTA_WLF="$(abspath $(QUESTA_WLF))",) \
+	  $(NC_RUN) ./run.sh m1
 
-questa-m1-wave: verilog
-	@test -f "$(DDR_IMAGE)" || { \
-	  echo "Missing $(DDR_IMAGE) — run: make -C $(REPO_ROOT)/tools/ddr_pack pack-m1"; exit 1; }
-	cd $(QUESTA_DIR) && DDR_IMAGE="$(DDR_IMAGE)" QUESTA_WAVE=1 \
-	  QUESTA_WLF="$(abspath $(QUESTA_WLF))" $(NC_RUN) ./run.sh m1
-
-questa-wave:
+questa-view:
 	@test -f $(QUESTA_WLF) || { \
-	  echo "Missing $(QUESTA_WLF) — run: make questa-m1-wave"; exit 1; }
+	  echo "Missing $(QUESTA_WLF) — run: make questa WAVE=1"; exit 1; }
 	cd $(dir $(abspath $(QUESTA_WLF))) && \
 	  $(NC_RUN_GUI) vsim -view $(notdir $(QUESTA_WLF))
 
-sim: clean-sim
+verilator: clean-verilator
 	@test -f "$(DDR_IMAGE)" || { \
 	  echo "Missing $(DDR_IMAGE) — run: make -C $(REPO_ROOT)/tools/ddr_pack pack-m1"; exit 1; }
-	cd $(SCALA_ROOT) && DDR_IMAGE="$(DDR_IMAGE)" $(SBT) "runMain top.LlamaM1TopSim"
+	cd $(SCALA_ROOT) && DDR_IMAGE="$(DDR_IMAGE)" \
+	  $(SCALA_ROOT)/scripts/sbt-runmain.sh top.LlamaM1TopSim
 
-clean-sim:
+clean-verilator:
 	rm -rf gen/sim 2>/dev/null || true
 
 clean-questa:
 	rm -rf test/questa/work test/questa/transcript
 
-clean: clean-sim clean-questa
+clean: clean-verilator clean-questa
 	rm -rf gen

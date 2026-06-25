@@ -1,7 +1,7 @@
 # DDR weight packer
 
 Offline tool to pack HuggingFace `model.safetensors` into a **1 GiB logical DDR image**
-matching [`DdrMemoryMap.scala`](../../src/scala/common/DdrMemoryMap.scala).
+matching [`DdrMemoryMap.scala`](../../src/scala/ddrMemoryMap/DdrMemoryMap.scala).
 
 ## Quick start
 

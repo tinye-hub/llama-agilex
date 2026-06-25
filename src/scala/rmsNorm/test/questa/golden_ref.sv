@@ -71,7 +71,8 @@ package rmsnorm_golden_ref_pkg;
     input  shortreal  x_in[],
     input  shortreal  gamma_in[],
     input  string     out_dir,
-    output shortreal  y_out[]
+    output shortreal  y_out[],
+    output logic [15:0] emit_fp16_out[]
   );
     int           scale_shift;
     logic [31:0]  acc, mean_sq, mean_eps, scale;
@@ -88,6 +89,7 @@ package rmsnorm_golden_ref_pkg;
     begin
       golden_ensure_dir(out_dir);
       y_out = new[d];
+      emit_fp16_out = new[d];
       collect_fp32 = new[d];
       emit_x_fp32  = new[d];
       emit_g_fp32  = new[d];
@@ -139,6 +141,7 @@ package rmsnorm_golden_ref_pkg;
         out_f32         = f32_mul_bits(xg, scale);
         emit_scaled[i]  = out_f32;
         emit_fp16[i]    = f32_to_fp16(out_f32);
+        emit_fp16_out[i] = emit_fp16[i];
         y_out[i]        = fp16_to_shortreal(emit_fp16[i]);
       end
 

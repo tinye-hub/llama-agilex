@@ -1,6 +1,6 @@
 package ddrAgent
 
-import common.DdrMemoryMap
+import ddrMemoryMap.DdrMemoryMap
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib.bus.amba4.axi.sim.{AxiMemorySim, AxiMemorySimConfig}
@@ -14,6 +14,8 @@ import scala.language.postfixOps
  * Verilator sim: [[DdrAgentM1]] + file-backed AXI4 DDR slave.
  *
  * Preload: `tools/ddr_pack/out/ddr_image_m1.bin` (or `DDR_IMAGE` env).
+ * Run: `make verilator` (colored PASS via scripts/sbt-runmain.sh).
+ * Questa bit-exact check: `make questa`.
  */
 object DdrAgentM1Sim extends App {
 
@@ -165,7 +167,6 @@ object DdrAgentM1Sim extends App {
     check(recvEmbed, goldenEmbed, "embed")
     check(recvGamma, goldenGamma, "gamma")
 
-    println("\u001b[32m********** PASS **********\u001b[0m")
     simSuccess()
   }
 }

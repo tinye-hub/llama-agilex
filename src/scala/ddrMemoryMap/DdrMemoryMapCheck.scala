@@ -1,6 +1,6 @@
-package common
+package ddrMemoryMap
 
-/** `sbt "runMain common.DdrMemoryMapCheck"` — spot-check [[DdrMemoryMap]] against ddr-memory-map.md */
+/** `sbt "runMain ddrMemoryMap.DdrMemoryMapCheck"` — spot-check [[DdrMemoryMap]] against ddr-memory-map.md */
 object DdrMemoryMapCheck extends App {
   DdrMemoryMap.sanityCheck()
   println("DdrMemoryMap.sanityCheck() passed.")

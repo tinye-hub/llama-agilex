@@ -3,7 +3,7 @@
 > **DdrAgent** 是 PL 侧唯一的 DDR 访问代理：接收 **LlamaScheduler** 的 `MemCmd`，翻译成 AXI4 burst 读写，按 `sink_id` 将读回数据路由到下游 AXI-Stream 或 FIFO。
 >
 > 调度与地址计算见 [llama-scheduler-design.md](../../llamaScheduler/doc/llama-scheduler-design.md)。  
-> DDR 全局地址见 [ddr-memory-map.md](../../common/doc/ddr-memory-map.md)。
+> DDR 全局地址见 [ddr-memory-map.md](../../ddrMemoryMap/doc/ddr-memory-map.md)。
 
 **主线配置**：2 GB LPDDR4，AXI burst ≥ 256 B，outstanding ≥ 8。
 
@@ -142,8 +142,8 @@ AXI R data ──► row_buffer[4096 B] ──► beat_serializer ──► Axi4
 - L0 norm1 γ → AR `0x1F50_0000`
 - 两侧 2048 beat 与 DDR preload 一致
 
-单元：`make -C src/scala/ddrAgent sim`（Verilator）、`questa-m1`（Questa）。  
-集成：`make -C src/scala/top questa-m1`。
+单元：`make -C src/scala/ddrAgent verilator`（64-bit AXI）、`questa`（256-bit AXI）。  
+集成：`make -C src/scala/top questa`。
 
 ---
 
@@ -172,5 +172,5 @@ ddrAgent/
 │   ├── DdrAgentM1Sim.scala
 │   ├── SimDdrImage.scala
 │   └── questa/
-└── Makefile                    # sim | questa-m1 | verilog
+└── Makefile                    # verilator | questa | verilog
 ```

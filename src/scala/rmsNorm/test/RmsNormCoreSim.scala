@@ -16,7 +16,11 @@ object RmsNormCoreSim extends App {
   val xMax     = 32.0f
   val gammaMin = 0.0f
   val gammaMax = 8.0f
-  val vecSeed = sys.env.getOrElse("RMSNORM_SIM_SEED", "0xC0FFEE01").stripPrefix("0x").toLong.toInt
+  val vecSeed = {
+    val s = sys.env.getOrElse("RMSNORM_SIM_SEED", "0xC0FFEE01").trim
+    val hex = if (s.startsWith("0x") || s.startsWith("0X")) s.drop(2) else s
+    java.lang.Long.parseLong(hex, 16).toInt
+  }
   val rng = new Random(vecSeed)
 
   def randVec(dim: Int, lo: Float, hi: Float): Array[Float] =

@@ -37,11 +37,12 @@ RMSNorm 模块目录：`rmsNorm/`（`scala/` 源码、`test/` 仿真、`gen/` �
 
 ```bash
 cd src/scala/rmsNorm
-make verilog    # -> gen/verilog/
-make sim        # Verilator, SIM_DIM=16
-make quartus    # syn+fit+sta, no bitstream
+make verilog     # -> gen/verilog/
+make verilator   # Verilator control-flow smoke
+make questa      # Questa + real FP IPs (FP golden)
+make quartus     # syn+fit+sta, no bitstream
 ```
 
-或：`scripts/run_rmsnorm_sim.sh`（内部调用 `make -C rmsNorm sim`）。
+或：`scripts/run_rmsnorm_sim.sh`（若存在，应调用 `make -C rmsNorm verilator`）。
 
 Requires SpinalHDL **1.12.2+** (see `build.sbt`) and OSS CAD Suite Verilator on `PATH`.

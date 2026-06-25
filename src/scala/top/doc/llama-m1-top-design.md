@@ -1,7 +1,7 @@
 # LlamaM1Top — 里程碑 1 顶层设计
 
 > PL 顶层：**HPS (AXI4-Lite)** → **LlamaSchedulerM1** → **DdrAgentM1** → **RmsNormAxiTop**  
-> 对应文档：[ddr-memory-map.md](../../common/doc/ddr-memory-map.md)、[llama-scheduler-design.md](../../llamaScheduler/doc/llama-scheduler-design.md)、[ddr-agent-design.md](../../ddrAgent/doc/ddr-agent-design.md)、[rms-norm-module-design.md](../../rmsNorm/doc/rms-norm-module-design.md)
+> 对应文档：[ddr-memory-map.md](../../ddrMemoryMap/doc/ddr-memory-map.md)、[llama-scheduler-design.md](../../llamaScheduler/doc/llama-scheduler-design.md)、[ddr-agent-design.md](../../ddrAgent/doc/ddr-agent-design.md)、[rms-norm-module-design.md](../../rmsNorm/doc/rms-norm-module-design.md)
 
 ## 1. 互联图
 
@@ -24,7 +24,7 @@
   HPS 启动：离线镜像 → 灌入 LPDDR4B 物理 0（逻辑 `EMB_BASE`）；LPDDR4A 仅 Linux。
 ```
 
-逻辑地址与区域划分见 [ddr-memory-map.md](../../common/doc/ddr-memory-map.md)。
+逻辑地址与区域划分见 [ddr-memory-map.md](../../ddrMemoryMap/doc/ddr-memory-map.md)。
 
 **GHRD 集成**：`quartus_prj/GHRD` 中 HPS→PL 控制面为 **`lwhps2fpga`（AXI4）**，非 APB。将 `io.hps` 经 Platform Designer interconnect 挂到 lightweight H2F slave；`io.ddrAxi` 接 LPDDR4B Fabric EMIF 或 `fpga2hps` 路径（按板级规划）。
 
@@ -40,7 +40,7 @@
 
 ## 3. 里程碑 1 数据流
 
-**前提**：HPS 已将 Plan A 镜像写入 **LPDDR4B**（含 `EMB_BASE`、`RMS_GAMMA_BASE` 等；见 [ddr-memory-map.md §2–3](../../common/doc/ddr-memory-map.md)）。
+**前提**：HPS 已将 Plan A 镜像写入 **LPDDR4B**（含 `EMB_BASE`、`RMS_GAMMA_BASE` 等；见 [ddr-memory-map.md §2–3](../../ddrMemoryMap/doc/ddr-memory-map.md)）。
 
 1. HPS 写 `TOKEN_ID` / `SEQ_POS`，写 `CTRL.job_start`（AXI4-Lite 写 `0x00` bit0）。
 2. `LlamaSchedulerM1` 校验 `token_id`，发 2 条 `MemCmd`（`EMBED_ROW` @ `embRowBase(token_id)` + `RMS_GAMMA` @ L0 norm1）。
@@ -64,8 +64,10 @@ make verilog-sim   # 仿真用（RmsNormAlteraIpSim 时序桩）
 
 | 目标 | 命令 | 验证范围 |
 |:---|:---|:---|
-| Verilator 控制流 | `make sim` | AXI4-Lite → Scheduler → DdrAgent → 2048 beats → `job_done`；**FP 数值无意义**（IP 桩输出 0） |
-| Questa M1 毕业 | `make questa-m1` | 同上 + **FP16 golden**（真实 Quartus IP）；test2 OOB `errorCode=1` |
+| Verilator 控制流 | `make verilator` | AXI4-Lite → Scheduler → DdrAgent → 2048 beats → `job_done`；**FP 数值无意义**（IP 桩输出 0） |
+| Questa M1 毕业 | `make questa` | 同上 + **FP16 golden**（真实 Quartus IP）；test2 OOB `errorCode=1` |
+
+变体：`make questa WAVE=1` 录波形；`make questa VIEW=1` 打开 WLF。Verilator 彩色 PASS/FAIL 由 `scripts/sbt-runmain.sh` 打印（见 [simulation-conventions.md](../../doc/simulation-conventions.md)）。
 
 前提：`make -C tools/ddr_pack pack-m1` 生成 `ddr_image_m1.bin`；Questa 需 `source activate.sh`（simlib + questacoreprime）。
 

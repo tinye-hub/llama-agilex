@@ -1,4 +1,4 @@
-# Open a recorded Questa WLF (used by: make questa-wave).
+# Open a recorded Questa WLF (used by: make questa VIEW=1).
 # Usage: cd work && vsim -do ../view_wave.do
 #   or:  vsim -view tb_rmsnorm_axi.wlf
 
@@ -18,7 +18,7 @@ if {[info exists env(QUESTA_WLF)] && $env(QUESTA_WLF) ne ""} {
 }
 
 if {![file exists $_wlf]} {
-    echo "ERROR: missing $_wlf — run: make questa-axi-wave"
+    echo "ERROR: missing $_wlf — run: make questa WAVE=1"
     exit 1
 }
 

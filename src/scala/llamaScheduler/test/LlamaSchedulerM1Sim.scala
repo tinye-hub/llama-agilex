@@ -1,6 +1,6 @@
 package llamaScheduler
 
-import common.DdrMemoryMap
+import ddrMemoryMap.DdrMemoryMap
 import ddrAgent.{DdrSinkId, MemCmdType}
 import spinal.core._
 import spinal.core.sim._
@@ -154,7 +154,6 @@ object LlamaSchedulerM1Sim extends App {
     dut.clockDomain.waitSampling()
     awaitSchedState(dut, expected = 0)
 
-    println("\u001b[32m********** PASS **********\u001b[0m")
     simSuccess()
   }
 }

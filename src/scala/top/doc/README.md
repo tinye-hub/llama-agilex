@@ -17,7 +17,7 @@ top/
 │   ├── LlamaM1TopSim.scala   ← Verilator 控制流 smoke test
 │   └── questa/               ← Questa M1 毕业（FP golden）
 ├── gen/verilog/              make verilog
-└── Makefile                  sim | questa-m1 | verilog
+└── Makefile                  verilator | questa | verilog
 ```
 
 子模块（由 top 例化）：
@@ -30,6 +30,8 @@ top/
 
 ```bash
 make -C tools/ddr_pack pack-m1
-cd src/scala/top && make sim          # Verilator 控制流
-cd src/scala/top && make questa-m1    # Questa FP 毕业考试
+cd src/scala/top && make verilator    # Verilator 控制流（PASS/FAIL 彩色见 sbt-runmain.sh）
+cd src/scala/top && make questa       # Questa FP 毕业考试
 ```
+
+仿真约定：[doc/simulation-conventions.md](../../doc/simulation-conventions.md)

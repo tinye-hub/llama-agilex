@@ -3,7 +3,7 @@
 #
 # Prerequisites:
 #   source <repo>/set_env.sh   (quartus + questacoreprime)
-#   make questa-axi            (verilog + sim, dim=2048)
+#   make questa                (verilog + sim, dim=2048)
 #   simlib compiled at simlib/quartus2025_1_1_agilex5_questa2024_3
 #
 # Usage:
