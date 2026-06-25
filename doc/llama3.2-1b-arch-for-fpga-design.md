@@ -2291,14 +2291,15 @@ $$80\ \text{MiB} + 384\ \text{MiB} + 501\ \text{MiB} + 32\ \text{MiB} \approx 99
 | DDR 区域 | 地址范围 | 长度 | 内容 | 说明 |
 |:---|:---:|:---:|:---|:---|
 | Embedding / LM head 共享表 | `0x0000_0000` - `0x1F4F_FFFF` | **501 MiB** | `tok_emb.weight == out_head.weight`，`[128256,2048] FP16` | Embedding 随机读 1 行；LM head 每 token 顺序扫全表 |
-| 对齐空洞 | `0x1F50_0000` - `0x1FFF_FFFF` | 11 MiB | reserved | 把 attention 起点对齐到 512 MiB |
+| RMSNorm γ 表 | `0x1F50_0000` - `0x1F520FFF` | **132 KiB** | 33 × `[2048] FP16` γ（norm1/norm2/final_norm） | 权威副本在 DDR；每次 RMSNorm 读 4 KiB |
+| 对齐空洞 | `0x1F521000` - `0x1FFF_FFFF` | ~10.9 MiB | reserved | 把 attention 起点对齐到 512 MiB |
 | Attention 权重 | `0x2000_0000` - `0x24FF_FFFF` | **80 MiB** | 16 层 WQ/WK/WV/WO，INT4 packed | 每层 5 MiB |
 | FFN 权重 | `0x2500_0000` - `0x3CFF_FFFF` | **384 MiB** | 16 层 gate/up/down，INT4 packed | 每层 24 MiB |
 | KV Cache（1K, FP16）| `0x3D00_0000` - `0x3EFF_FFFF` | **32 MiB** | 16 层 K/V cache | 每层 2 MiB |
 | Metadata / descriptors | `0x3F00_0000` - `0x3FFF_FFFF` | 16 MiB | INT4 scale/zero、DMA descriptor、版本头 | 不计入前文 payload-only 时延 |
 | 预留扩展区 | `0x4000_0000` - `0x7FFF_FFFF` | 1024 MiB | Plan B 独立 INT4 LM head、更长 KV、调试 trace | 当前主线不使用 |
 
-这张表的 payload 实际只用到 **501 + 80 + 384 + 32 = 997 MiB**，即约 **1.05 GB** 十进制容量；把对齐空洞和 metadata 预留也算进去，仍只到 `0x4000_0000`（1 GiB）边界，离 2 GB DDR 还有约一半余量。
+这张表的静态 payload 实际用到 **501 MiB + 132 KiB + 80 MiB + 384 MiB + 32 MiB ≈ 997.1 MiB**；把对齐空洞和 metadata 预留也算进去，仍只到 `0x4000_0000`（1 GiB）边界，离 2 GB DDR 还有约一半余量。推理时 γ 表每 token 另计 **33 × 4 KiB = 132 KiB** 读取流量（每层 norm 各读一次）。
 
 #### 11.4 子区域地址公式
 
@@ -2318,7 +2319,35 @@ byte_offset : 0 .. 0x0FFF
 
 LM head 复用同一段地址，只是访问模式从“读 1 行”变成“从 `0x0000_0000` 顺序扫到 `0x1F4F_FFFF`”。这就是 Plan A 简洁但慢的根本原因：没有第二份量化输出头，DDR 里只有一份 FP16 表。
 
-##### 11.4.2 Attention 权重布局
+##### 11.4.2 RMSNorm γ 表（DDR 权威副本）
+
+33 组 γ，每组 2048 FP16，步长与 embedding 行相同：
+
+$$2048 \times 2\ \text{B} = 4096\ \text{B} = 0x1000$$
+
+$$33 \times 0x1000 = 0x21000 = 132\ \text{KiB}$$
+
+```text
+RMS_GAMMA_BASE = 0x1F50_0000
+
+normKind : 0=norm1, 1=norm2, 2=final_norm
+gamma_index(layer, normKind) = (normKind == 2) ? 32 : (layer * 2 + normKind)
+
+gamma_addr(layer, normKind) = RMS_GAMMA_BASE + gamma_index * 0x1000
+
+layer     : 0 .. 15（normKind=2 时忽略）
+normKind  : 0 .. 2
+```
+
+| gamma_index | 内容 |
+|:---:|:---|
+| 0, 1 | layer 0 的 norm1 / norm2 |
+| 2k, 2k+1 | layer k 的 norm1 / norm2 |
+| 32 | `final_norm` |
+
+每次 RMSNorm 调用读 **4 KiB**；全 token 共 33 次 → **132 KiB/token** γ 读取流量。Scheduler 经 DdrAgent `RMS_GAMMA` sink 送入 `RmsNorm.weightIn`；片上仅缓存当前一组 2048 gamma。
+
+##### 11.4.3 Attention 权重布局
 
 每层 attention INT4 payload：
 
@@ -2345,7 +2374,7 @@ l : 0 .. 15
 
 GEMV 引擎每次按 tile 顺序取 INT4 packed 权重：**64 个权重 = 32 B payload**，实际 AXI 建议聚合成 256 B / 512 B burst 后写入 ping-pong buffer，再由 unpack/dequant 或 FP16 计算路径消费。
 
-##### 11.4.3 FFN 权重布局
+##### 11.4.4 FFN 权重布局
 
 每层 FFN 的 gate/up/down 三个矩阵形状相同量级，INT4 payload 都是 8 MiB：
 
@@ -2370,7 +2399,7 @@ l : 0 .. 15
 
 FFN 的中间向量 `g`、`u`、`silu(g)*u` 都是 `[8192] FP16 = 16 KiB`，放片上缓冲，不写回 DDR。
 
-##### 11.4.4 KV Cache 布局（1K, FP16, token-major）
+##### 11.4.5 KV Cache 布局（1K, FP16, token-major）
 
 每层每 token 的 KV：
 
@@ -2398,39 +2427,42 @@ decode 到位置 `t` 时，当前层先把新 K/V 写入 `K_addr(l,t)` / `V_addr
 
 #### 11.5 片上 M20K / MLAB 布局建议
 
-DDR 地址只负责大块数据；下面这些数据应固定在片上，避免每 token 产生碎片化 DDR 小读：
+DDR 地址负责大块数据；下面数据建议固定在片上，避免每 token 产生碎片化 DDR 小读：
 
 | 片上区域 | 建议大小 | 内容 | 作用 |
 |:---|:---:|:---|:---|
 | `ONCHIP_ROPE_COS` | 128 KiB | `cos[1024,64] FP16` | RoPE 行随机读 |
 | `ONCHIP_ROPE_SIN` | 128 KiB | `sin[1024,64] FP16` | RoPE 行随机读 |
-| `ONCHIP_RMS_GAMMA` | 132 KiB | 33 个 `[2048] FP16` γ | DDR 启动加载后的片上工作副本，decode 热路径片上读取 |
 | `ONCHIP_LOGITS` | 257 KiB | `[128256] FP16` | LM head 输出，供 softmax/sampling |
 | `ONCHIP_EXP_LUT` | 4 KiB | exp 近似 LUT | Softmax |
 | `ONCHIP_TILE_PINGPONG` | 8-32 KiB | DDR weight tile buffer | GEMV 边搬边算 |
 | `ONCHIP_ACT_BUF` | 16-64 KiB | `[2048]` / `[8192]` 激活 | residual、FFN 中间向量 |
 
-核心固定项约 **649 KiB**（RoPE 256 KiB + γ 132 KiB + logits 257 KiB + exp LUT 4 KiB），再加 tile / activation buffer 仍能落在 Agilex 5E 013B 的 **0.87 MB M20K** 主线预算内；若综合后 M20K 紧张，优先压缩 logits buffer 或把部分中间向量改成 streaming，而不是把 RMSNorm γ 或 1K RoPE 表搬回 DDR。
+**RMSNorm γ 不在片上长期保存**（权威副本在 DDR `0x1F50_0000` 起 132 KiB）；每次 norm 经 DdrAgent 读 4 KiB。相较原方案省 **132 KiB M20K**，可让给 tile / activation buffer。
+
+核心固定项约 **517 KiB**（RoPE 256 KiB + logits 257 KiB + exp LUT 4 KiB），再加 tile / activation buffer 仍能落在 Agilex 5E 013B 的 **0.87 MB M20K** 主线预算内。
 
 #### 11.6 单 token 调度顺序（与地址布局对应）
 
 ```text
 1. HPS 写入 token_id / start_pos / sampling 参数
 2. DMA 从 EMB_BASE + token_id*0x1000 读取 4 KiB embedding row
+   并行/流水：从 RMS_GAMMA_BASE + gamma_index*0x1000 读取 4 KiB γ（L0 norm1）
 3. for layer l in 0..15:
-     a. RMSNorm: 从 ONCHIP_RMS_GAMMA 读 gamma，输出 normed_x[2048]
+     a. RMSNorm: 从 DDR 读 norm1 γ（4 KiB）→ weightIn；dataIn 来自 residual / embedding
      b. Q/K/V GEMV: 从 ATTN_BASE + l*5MiB 依次流式读 W_Q/W_K/W_V
      c. RoPE: 从 ONCHIP_ROPE_COS/SIN 按 start_pos 读 1 行，旋转 Q/K
      d. KV write: 写 K_addr(l,t)、V_addr(l,t)，共 2 KiB/layer
      e. GQA: 读 KV_BASE + l*2MiB 中 0..t 的历史 K/V，最坏 2 MiB/layer
      f. O GEMV: 继续读 W_O，写回 residual x[2048]
-     g. FFN: 从 FFN_BASE + l*24MiB 依次流式读 gate/up/down
-4. Final RMSNorm: 仍使用片上 gamma
+     g. RMSNorm: 从 DDR 读 norm2 γ（4 KiB）
+     h. FFN: 从 FFN_BASE + l*24MiB 依次流式读 gate/up/down
+4. Final RMSNorm: 从 DDR 读 final_norm γ（gamma_index=32）
 5. LM head: 顺序读取 0x0000_0000..0x1F4F_FFFF，输出 logits[128256]
 6. Softmax / sampling: logits 留在 ONCHIP_LOGITS，输出 next token_id
 ```
 
-这个调度要求 DDR controller 长时间处于顺序 burst 状态：除了最开始的 4 KiB embedding 随机读和每层 KV 写入，大头都是可预测的线性扫描。因此 RTL 的重点不是增加新的算术单元，而是保证 **地址发生器 + DMA descriptor + ping-pong buffer + 反压握手** 不让 8.5 GB/s 的 LPDDR4 通道出现空泡。
+除 embedding 随机读、每层 2 次 γ 读（4 KiB×2）与 KV 写入外，大头仍是可预测的线性扫描（attention/FFN/LM head）。RTL 重点仍是 **地址发生器 + MemCmd + DdrAgent outstanding + 反压握手**。
 
 ---
 

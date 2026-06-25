@@ -1,6 +1,7 @@
 package rmsNorm
 
 import spinal.core._
+import spinal.core.sim._
 import spinal.lib._
 import util.{Fp32Epsilon, Fp32ScaleDown}
 
@@ -213,4 +214,10 @@ class RmsNormCore(
   }
 
   io.busy := state =/= State.IDLE
+
+  state.simPublic()
+  dataCnt.simPublic()
+  weightCnt.simPublic()
+  scaleLockValid.simPublic()
+  accDone.simPublic()
 }

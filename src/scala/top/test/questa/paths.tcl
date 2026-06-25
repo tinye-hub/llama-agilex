@@ -1,0 +1,75 @@
+# Repository paths for LlamaM1Top Questa simulation.
+# QUESTA_DIR comes from run.sh (LLAMA_M1_QUESTA_DIR).
+
+if {![info exists env(LLAMA_M1_QUESTA_DIR)] || $env(LLAMA_M1_QUESTA_DIR) eq ""} {
+    echo "ERROR: LLAMA_M1_QUESTA_DIR not set — run via ./run.sh"
+    exit 1
+}
+set QUESTA_DIR  [file normalize $env(LLAMA_M1_QUESTA_DIR)]
+set TOP_DIR     [file normalize [file join $QUESTA_DIR ../..]]
+set SCALA_DIR   [file normalize [file join $TOP_DIR ..]]
+set REPO_ROOT   [file normalize [file join $SCALA_DIR ../..]]
+
+set SIMLIB_DIR      [file join $REPO_ROOT simlib quartus2025_1_1_agilex5_questa2024_3]
+set QUARTUS_IP_DIR  [file join $REPO_ROOT quartus_ip]
+set GEN_TOP_V       [file join $TOP_DIR gen verilog LlamaM1Top.v]
+set WORK_DIR        [file join $QUESTA_DIR work]
+set DEFAULT_DDR_IMAGE [file join $REPO_ROOT tools ddr_pack out ddr_image_m1.bin]
+
+# rmsNorm questa dir (shared fp16_utils.sv, compile_ips.tcl)
+set RMSNORM_QUESTA_DIR [file join $SCALA_DIR rmsNorm test questa]
+
+# ddrAgent questa dir (shared axi_read_mem.sv)
+set DDRAGENT_QUESTA_DIR [file join $SCALA_DIR ddrAgent test questa]
+
+if {![file exists $SIMLIB_DIR/questa_device_mapping.tcl]} {
+    echo "ERROR: missing simlib at $SIMLIB_DIR"
+    exit 1
+}
+if {![file exists $GEN_TOP_V]} {
+    echo "ERROR: missing $GEN_TOP_V — run: make verilog (from src/scala/top)"
+    exit 1
+}
+
+file mkdir $WORK_DIR
+cd $WORK_DIR
+
+# fp32Rsqrt LUT tables: altera_lnsim opens by basename from sim cwd.
+set _fp32rsqrt_mem [file join $QUARTUS_IP_DIR fp32Rsqrt altera_fp_functions_19110 synth]
+foreach _hex {
+    fp32Rsqrt_altera_fp_functions_19110_5fbcymq_memoryC0_uid58_invSqrtTables_lutmem.hex
+    fp32Rsqrt_altera_fp_functions_19110_5fbcymq_memoryC1_uid61_invSqrtTables_lutmem.hex
+    fp32Rsqrt_altera_fp_functions_19110_5fbcymq_memoryC2_uid64_invSqrtTables_lutmem.hex
+} {
+    set _src [file join $_fp32rsqrt_mem $_hex]
+    if {![file exists $_src]} {
+        echo "ERROR: missing fp32Rsqrt memory init $_src"
+        exit 1
+    }
+    set _dst [file join $WORK_DIR $_hex]
+    if {![file exists $_dst]} {
+        file link -symbolic $_dst $_src
+    }
+}
+unset _fp32rsqrt_mem _hex _src _dst
+
+# Agilex 5 device simlib
+source $SIMLIB_DIR/questa_device_mapping.tcl
+set _simlib_libs [file join $SIMLIB_DIR libs]
+foreach _vlib {
+    lpm_ver sgate_ver altera_ver altera_mf_ver altera_lnsim_ver
+    tennm_ver tennm_hvio_ver tennm_sm_hps_ver tennm_sm4_hssi_ver
+    tennm_fmm3_hssi_ver tennm_revb_hvio_ver tennm_revb_io96_ver
+    tennm_agilex5_io96_ver tennm_agilex5_hssi_a_ver
+} {
+    vmap $_vlib [file join $_simlib_libs $_vlib]
+}
+unset _simlib_libs _vlib
+
+if {[info exists env(QUARTUS_ROOTDIR)]} {
+    set QUARTUS_SIM_LIB_DIR [file join $env(QUARTUS_ROOTDIR) eda sim_lib]
+} else {
+    set QUARTUS_SIM_LIB_DIR /applicsqum/altera/quartus/pro_25_1_1/quartus/eda/sim_lib
+}
+
+set ::env(LLAMA_M1_QUESTA_WORK) $WORK_DIR

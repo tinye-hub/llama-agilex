@@ -1,0 +1,53 @@
+# LlamaM1Top Questa simulation
+
+M1 毕业考试：`LlamaM1Top` 端到端仿真，含真实 Quartus Agilex 5 浮点 IP（`altera_fp_functions` + `agilex_native_floating_point_dsp`），数值精度可验证。
+
+## 为什么必须用 Questa
+
+Verilator **不支持**仿真 Quartus Agilex IP 黑盒子。
+`IntelFloatIPFlowIOSim` 只是延迟桩（输出恒为 0），无法验证 FP 精度。
+所有含乘法器、FP IP 的模块**必须用 Questa 做功能仿真**（见 `.cursor/rules/questa-simulation.mdc`）。
+
+## 测试覆盖
+
+| Test | 描述 | Pass 条件 |
+|:---|:---|:---|
+| test1 happy path | token_id=0, seq_pos=7 | 2048 rmsNormOut beats，FP16 golden 比对（tolerance 1e-2），job_done=1，job_error=0 |
+| test2 OOB | token_id=128256 (vocabSize) | job_error=1，errorCode=1，无 DDR 读，无 rmsNormOut |
+
+## 前提
+
+```bash
+source /userworkqum/tinye/llama-agilex/activate.sh   # quartus + questacoreprime
+make -C tools/ddr_pack pack-m1                        # ddr_image_m1.bin
+cd src/scala/top && make verilog                      # top/gen/verilog/LlamaM1Top.v
+```
+
+Simlib 必须在 `simlib/quartus2025_1_1_agilex5_questa2024_3/`（由 `quartus_sh --simlib_comp` 生成，与 rmsNorm Questa 共用）。
+
+## 运行
+
+```bash
+cd src/scala/top
+make questa-m1           # NC_RUN 自动读取 set_env.sh
+make questa-m1-wave      # 带波形 (QUESTA_WAVE=1)
+make questa-m1 NC_RUN=   # 本地 Questa license
+make questa-wave NC_RUN= # 在 GUI 中打开波形
+```
+
+## 文件说明
+
+| 文件 | 说明 |
+|:---|:---|
+| `run.sh` | 入口脚本（source set_env.sh，检查前提，vsim -c） |
+| `paths.tcl` | 仓库路径、simlib mapping、work dir、fp32Rsqrt LUT symlinks |
+| `compile_dut.tcl` | 编译 FP IP（复用 rmsNorm/compile_ips.tcl）+ LlamaM1Top.v + TB |
+| `run_compile.do` | 仅编译 |
+| `run_m1.do` | 编译 + 仿真 |
+| `tb_llama_m1_top.sv` | 主 TB：AXI4-Lite master tasks、axi_read_mem、rmsNormOut drain、FP golden 比对 |
+
+共享文件（不复制，通过 paths.tcl 路径引用）：
+
+- `rmsNorm/test/questa/fp16_utils.sv` — FP16/FP32 转换包 + `golden_rmsnorm_fp16()`
+- `ddrAgent/test/questa/axi_read_mem.sv` — AXI4 read-only 内存模型（256-bit）
+- `rmsNorm/test/questa/compile_ips.tcl` — Quartus FP IP 编译（内部会 source `compile_quartus_vhdl_libs.tcl`）

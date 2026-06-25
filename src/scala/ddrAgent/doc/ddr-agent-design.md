@@ -127,7 +127,7 @@ AXI R data ──► row_buffer[4096 B] ──► beat_serializer ──► Axi4
 
 ## 7. 里程碑 1 行为摘要
 
-实现 `READ` + `EMBED_ROW` + `RMS_GAMMA`：
+实现 `READ` + `EMBED_ROW` + `RMS_GAMMA`（`DdrAgentM1.scala`，**已实现**）：
 
 ```text
 1. 取 MemCmd（可连续两条：embed @ 0x0, gamma @ 0x1F50_0000）
@@ -142,15 +142,18 @@ AXI R data ──► row_buffer[4096 B] ──► beat_serializer ──► Axi4
 - L0 norm1 γ → AR `0x1F50_0000`
 - 两侧 2048 beat 与 DDR preload 一致
 
+单元：`make -C src/scala/ddrAgent sim`（Verilator）、`questa-m1`（Questa）。  
+集成：`make -C src/scala/top questa-m1`。
+
 ---
 
 ## 8. 实现分期
 
-| 阶段 | 内容 |
-|:---|:---|
-| **M1** | `MemCmd`/`MemDone`、`AxiReader`、 `EmbedRowAxisSink`、`GammaAxisSink` |
-| **M2** | `GEMV_WEIGHT`、`KV_READ`/`KV_WRITE` |
-| **M3** | `LM_HEAD` 顺序扫描、写通路 |
+| 阶段 | 内容 | 状态 |
+|:---|:---|:---:|
+| **M1** | `MemCmd`/`MemDone`、`DdrAgentM1`（AXI 读 + embed/gamma stream） | ✓ |
+| **M2** | `GEMV_WEIGHT`、`KV_READ`/`KV_WRITE` | 待做 |
+| **M3** | `LM_HEAD` 顺序扫描、写通路 | 待做 |
 
 ---
 
@@ -159,12 +162,15 @@ AXI R data ──► row_buffer[4096 B] ──► beat_serializer ──► Axi4
 ```text
 ddrAgent/
 ├── doc/
+│   ├── README.md
 │   └── ddr-agent-design.md
 ├── scala/
-│   ├── MemCmd.scala
-│   ├── DdrAgent.scala
-│   └── sinks/
-│       ├── EmbedRowAxisSink.scala
-│       └── GammaAxisSink.scala
-└── test/
+│   ├── DdrAgentBundles.scala   # MemCmd, MemDone, DdrSinkId
+│   ├── DdrAgentAxi.scala       # AXI4 参数
+│   └── DdrAgentM1.scala        # 里程碑 1 实现
+├── test/
+│   ├── DdrAgentM1Sim.scala
+│   ├── SimDdrImage.scala
+│   └── questa/
+└── Makefile                    # sim | questa-m1 | verilog
 ```

@@ -31,3 +31,4 @@ Verilator 仿真用 64-bit AXI；Questa / 综合默认 256-bit（`make verilog A
 ## 相关文档
 
 - [llama-m1-top-design.md](../../top/doc/llama-m1-top-design.md)
+- [top/test/questa/README.md](../../top/test/questa/README.md) — 端到端 M1 毕业

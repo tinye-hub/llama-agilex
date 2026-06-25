@@ -73,12 +73,24 @@ package rmsnorm_fp16_pkg;
     logic [9:0]  mant;
     logic [7:0]  e;
     logic [22:0] m;
+    real         r;
     begin
       sign = h[15];
       exp  = h[14:10];
       mant = h[9:0];
-      if (exp == 5'h00) return 32'h0;
-      if (exp == 5'h1f) return 32'h0;
+      if (exp == 5'h00) begin
+        if (mant == 10'h0)
+          return {sign, 31'h0};
+        r = real'(mant) / 1024.0;
+        r = r * 2.0**(-14.0);
+        if (sign) r = -r;
+        return real_to_f32_bits(r);
+      end
+      if (exp == 5'h1f) begin
+        if (mant == 10'h0)
+          return {sign, 8'hff, 23'h0};
+        return 32'h7fc00000;
+      end
       e = exp - 15 + 127;
       m = mant << 13;
       fp16_to_f32_bits = {sign, e[7:0], m[22:0]};
@@ -123,6 +135,37 @@ package rmsnorm_fp16_pkg;
     ra = f32_bits_to_real(a);
     if (ra <= 0.0) return 32'h0;
     return real_to_f32_bits(1.0 / $sqrt(ra));
+  endfunction
+
+  // Golden from raw FP16 DDR bytes (no shortreal round-trip).
+  function automatic void golden_rmsnorm_fp16(
+    input  int d,
+    input  logic [15:0] x_h_in[],
+    input  logic [15:0] g_h_in[],
+    output shortreal y[]
+  );
+    logic [31:0] acc, mean_sq, mean_eps, scale;
+    int scale_shift;
+    y = new[d];
+    scale_shift = $clog2(d);
+    acc = 32'h0;
+    for (int i = 0; i < d; i++) begin
+      logic [31:0] x_f32, sq;
+      x_f32 = fp16_to_f32_bits(x_h_in[i]);
+      sq    = f32_mul_bits(x_f32, x_f32);
+      acc   = f32_add_bits(acc, sq);
+    end
+    mean_sq  = fp32_scale_down(acc, scale_shift);
+    mean_eps = f32_add_bits(mean_sq, FP32_EPS_RMSNORM);
+    scale    = f32_rsqrt_bits(mean_eps);
+    for (int i = 0; i < d; i++) begin
+      logic [31:0] x_f32, g_f32, x_gamma, out_f32;
+      x_f32    = fp16_to_f32_bits(x_h_in[i]);
+      g_f32    = fp16_to_f32_bits(g_h_in[i]);
+      x_gamma  = f32_mul_bits(x_f32, g_f32);
+      out_f32  = f32_mul_bits(x_gamma, scale);
+      y[i]     = fp16_to_shortreal(f32_to_fp16(out_f32));
+    end
   endfunction
 
   // Golden model mirroring RmsNormCore: FP16 I/O, FP32 square-sum / scale / emit muls.
