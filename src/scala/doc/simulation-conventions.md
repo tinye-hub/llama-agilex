@@ -48,7 +48,7 @@ nc run -r Taskerlist:b OSREL:RHEL8 RAM/4GB CORES/4 CGROUP:CORES -jpp fastest,pac
 
 - batch 节点内清空 `NC_RUN`，直接 `make`（避免 Questa 二次 nc）
 - 完成判定：`nc wait` + `nc info Status` + log 中 PASS/FAIL
-- 日志目录：`<repo>/out/logs/run_<timestamp>/`，`out/logs/latest` 为符号链接
+- 日志目录：`src/scala/out/logs/run_<timestamp>/`，`src/scala/out/logs/latest` 为符号链接
 - 轮询：`ncjobs -r` / `ncjobs -d -f`；补拉：`nc info -l <JobId>`
 
 ## Questa 变体（`WAVE` / `VIEW`）

@@ -5,7 +5,7 @@
 #
 # Parallel (batch):  PARALLEL=1 scripts/sim-matrix.sh <verilator|questa|sim>
 #   One background nc job per module (NC_RUN_BG / Taskerlist:b 4GB 4 cores),
-#   then nc wait, harvest logs under <repo>/out/logs/<run_id>/.
+#   then nc wait, harvest logs under src/scala/out/logs/<run_id>/.
 set -uo pipefail
 
 usage() {
@@ -124,10 +124,10 @@ evaluate_result() {
 init_log_dir() {
   local run_id
   run_id="$(date +%Y%m%d_%H%M%S)"
-  LOG_DIR="$REPO_ROOT/out/logs/run_${run_id}"
+  LOG_DIR="$SCALA_ROOT/out/logs/run_${run_id}"
   MANIFEST="$LOG_DIR/manifest.tsv"
   mkdir -p "$LOG_DIR"
-  ln -sfn "run_${run_id}" "$REPO_ROOT/out/logs/latest"
+  ln -sfn "run_${run_id}" "$SCALA_ROOT/out/logs/latest"
   echo "Batch logs: $LOG_DIR"
   echo "  NC_RUN_BG: ${NC_RUN_BG:-<unset>}"
   echo "  manifest:  $MANIFEST"

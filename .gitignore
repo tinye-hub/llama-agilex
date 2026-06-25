@@ -27,7 +27,7 @@ llama-fpga
 .cache/
 
 # make regression logs (sim-matrix.sh)
-out/logs/
+src/scala/out/logs/
 
 # Questa / Verilator logs at repo root
 transcript
