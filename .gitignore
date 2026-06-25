@@ -23,5 +23,11 @@ quartus_prj/
 # External / symlinked trees
 llama-fpga
 
+# nc batch / sbt runtime (sim-matrix-batch-env.sh)
+.cache/
+
+# make regression logs (sim-matrix.sh)
+out/logs/
+
 # Questa / Verilator logs at repo root
 transcript
