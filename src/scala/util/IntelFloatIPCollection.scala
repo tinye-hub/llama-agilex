@@ -105,6 +105,16 @@ object fp32MultAcc {
     adp.io.accIn << a
   }.adp.io.accOut
 
+  /**
+   * GEMV per-row accumulate: `result = fragment + (first ? 0 : prev)`.
+   * `first` (group-start) is explicit so back-to-back groups need no gap.
+   */
+  def firstAcc(first: Bool, a: Flow[Fragment[Bits]]): Flow[Fragment[Bits]] = new Composite(a, "firstAcc") {
+    val adp = new FpMultAccFirstAccAdapter(ipName, latency)
+    adp.io.first := first
+    adp.io.accIn << a
+  }.adp.io.accOut
+
   def mul_sim(a: Flow[Bits], b: Flow[Bits]): Flow[Bits] = new Composite(a, "mul_sim") {
     val ip = new IntelFloatIPFlowIOSim(latency, 2, 32, 32)
     ip.io.a << a
@@ -112,6 +122,12 @@ object fp32MultAcc {
   }.ip.io.r
 
   def serialAcc_sim(a: Flow[Fragment[Bits]]): Flow[Fragment[Bits]] = new Composite(a, "serialAcc_sim") {
+    val ip = new IntelFloatIPFlowIOSim(latency, 1, 32, 32, isAcc = true)
+    ip.io.accIn << a
+  }.ip.io.accOut
+
+  /** Simulation stub for [[firstAcc]] (control-flow only; `first` unused). */
+  def firstAcc_sim(first: Bool, a: Flow[Fragment[Bits]]): Flow[Fragment[Bits]] = new Composite(a, "firstAcc_sim") {
     val ip = new IntelFloatIPFlowIOSim(latency, 1, 32, 32, isAcc = true)
     ip.io.accIn << a
   }.ip.io.accOut

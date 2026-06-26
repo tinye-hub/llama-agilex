@@ -21,7 +21,7 @@ export PATH := $(SCRIPTS):$(PATH)
 export DDR_IMAGE
 export PARALLEL
 
-MODULES := rmsNorm ddrAgent top llamaScheduler ddrMemoryMap
+MODULES := rmsNorm gemvService64 ddrAgent top llamaScheduler ddrMemoryMap
 
 .PHONY: all help verilator questa sim regression clean clean-modules clean-scala clean-logs
 
@@ -42,6 +42,7 @@ help:
 	@echo ""
 	@echo "Modules:"
 	@echo "  rmsNorm         verilator, questa"
+	@echo "  gemvService64   verilator, questa"
 	@echo "  ddrAgent        verilator, questa"
 	@echo "  top             verilator, questa"
 	@echo "  llamaScheduler  verilator only"

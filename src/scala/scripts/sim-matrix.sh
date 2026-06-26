@@ -186,6 +186,7 @@ submit_nc_bg() {
 
 submit_verilator_jobs() {
   submit_nc_bg rmsNorm verilator verilator
+  submit_nc_bg gemvService64 verilator verilator
   submit_nc_bg ddrAgent verilator verilator
   submit_nc_bg top verilator verilator
   submit_nc_bg llamaScheduler verilator verilator
@@ -198,6 +199,7 @@ submit_questa_jobs() {
     echo ""
   fi
   submit_nc_bg rmsNorm questa questa
+  submit_nc_bg gemvService64 questa questa
   submit_nc_bg ddrAgent questa questa
   submit_nc_bg top questa questa
   record llamaScheduler questa SKIP "no Questa TB"
@@ -316,6 +318,7 @@ run_nc_parallel() {
 
 run_verilator_suite() {
   run_make_serial rmsNorm verilator verilator
+  run_make_serial gemvService64 verilator verilator
   run_make_serial ddrAgent verilator verilator
   run_make_serial top verilator verilator
   run_make_serial llamaScheduler verilator verilator
@@ -328,6 +331,7 @@ run_questa_suite_serial() {
     echo ""
   fi
   run_make_serial rmsNorm questa questa
+  run_make_serial gemvService64 questa questa
   run_make_serial ddrAgent questa questa
   run_make_serial top questa questa
   record llamaScheduler questa SKIP "no Questa TB"

@@ -206,6 +206,54 @@ class FpMultAccSerialAccAdapter(
 }
 
 /**
+ * Group serial accumulate on one [[IntelFpMultAccBlackBox]] with an **explicit**
+ * per-beat `first` flag: `result = fragment + (first ? 0 : prev)`.
+ *
+ * Unlike [[FpMultAccSerialAccAdapter]] (which derives the group boundary from a
+ * delayed `last`), the caller asserts `first` on the first beat of each group.
+ * This makes back-to-back groups correct (no inter-group gap required), which
+ * GEMV needs: each output row is a short group of `tilesPerRow` partials and
+ * rows stream with no idle cycle between them.
+ *
+ * `first` must be aligned with `accIn.valid` (same cycle as the fragment).
+ */
+class FpMultAccFirstAccAdapter(
+  val ipName:       String,
+  val latency:      Int,
+  val ipResultShim: Int = 0
+) extends Component {
+
+  val io = new Bundle {
+    val first  = in Bool()
+    val accIn  = slave(Flow(Fragment(Bits(32 bits))))
+    val accOut = master(Flow(Fragment(Bits(32 bits))))
+  }
+
+  val ip = new IntelFpMultAccBlackBox(ipName)
+  ip.io.ena := B(7, 3 bits)
+  val operand = Mux(io.accIn.valid, io.accIn.fragment, B(0, 32 bits))
+  ip.io.fp32_mult_a := operand
+  ip.io.fp32_mult_b := B(0x3F800000L, 32 bits) // 1.0
+  // accumulate=0 starts a fresh group sum; =1 adds to the running result.
+  // When idle (!valid) the operand is 0 so accumulate=1 just holds the value.
+  ip.io.accumulate  := !(io.accIn.valid && io.first)
+
+  if (latency == 0) {
+    io.accOut.valid    := io.accIn.valid
+    io.accOut.last     := io.accIn.last
+    io.accOut.fragment := ip.io.fp32_result
+  } else {
+    io.accOut.valid := Delay(io.accIn.valid, latency, init = False)
+    io.accOut.last  := Delay(io.accIn.last & io.accIn.valid, latency, init = False)
+    if (ipResultShim == 0) {
+      io.accOut.fragment := ip.io.fp32_result
+    } else {
+      io.accOut.fragment := Delay(ip.io.fp32_result, ipResultShim)
+    }
+  }
+}
+
+/**
  * FP32 add via [[IntelFpAddBlackBox]].
  *
  * @param latency     cycles from `fire` to `io.r.valid` (end-to-end, match IP pipeline depth).

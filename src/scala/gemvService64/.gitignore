@@ -1,0 +1,5 @@
+gen/
+test/questa/work/
+test/questa/transcript
+test/questa/*.wlf
+test/questa/golden_refs/

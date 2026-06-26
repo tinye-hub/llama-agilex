@@ -2,7 +2,19 @@
 
 Llama 3.2 1B on Intel Agilex 5 — SpinalHDL PL + HPS (GHRD).
 
-## 里程碑 1（当前）
+## 里程碑
+
+| 阶段 | 内容 | 状态 |
+|:---|:---|:---:|
+| **M1** | embed → RMSNorm L0 norm1 | ✓ |
+| **M2a** | GemvService64 + `W_Q`（L0） | 进行中 |
+| **M2b** | RoPE | 待做 |
+| **M2c** | Incremental GQA + KV cache | 待做 |
+| **M2d** | `W_O` + residual | 待做 |
+
+详见 [doc/milestone-m2.md](doc/milestone-m2.md)。
+
+### M1 回归
 
 `token_id` → Scheduler → DdrAgent DDR read → RmsNorm L0 norm1 → 2048×FP16 out。
 
