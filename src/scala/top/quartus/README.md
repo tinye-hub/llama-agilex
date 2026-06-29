@@ -35,4 +35,9 @@ cd src/scala/top/quartus
 quartus_sh -t scripts/synth_fit_sta.tcl
 ```
 
-资源与利用率见 `output_files/llama_m2a_top.fit.rpt`。
+| 工程 | 顶层 | 典型 Verilog 规模 | 说明 |
+|:---|:---|:---|:---|
+| 本工程 | `LlamaM2aTop` | ~10K 行 | 含 DdrAgent M20K rowMem、Gemv、RmsNorm |
+| `gemvService64/quartus` | `GemvService64` | ~7K 行 | GEMV 子系统独立评估 |
+
+综合时间参考（Agilex 5E，256-bit AXI）：syn ~30s + fit ~2min + sta ~10s（rowMem 重构后）。

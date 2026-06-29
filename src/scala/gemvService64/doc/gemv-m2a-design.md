@@ -1324,23 +1324,33 @@ x_wide = ActBuffer.read1024(0)    // RMSNorm 输出 x[0..63]，1024b 宽读
 
 ## 附录 B：目录与 Makefile
 
-### B.1 `gemvService64/Makefile` 目标（提案）
+### B.1 `gemvService64/Makefile` 目标（已实现）
 
 ```makefile
 verilog          # Spinal → gen/verilog/GemvService64.v
 verilator        # 控制流 smoke
-questa           # a2/a4 单元 golden
-questa-mac-beat  # a1 only
+questa           # 单元 golden（service + mac-beat）
+quartus          # syn+fit+sta（见 quartus/README.md）
+quartus-report   # fit/STA 摘要表
 ```
 
-### B.2 `top/Makefile` 新增
+### B.2 `top/Makefile`（M2a）
 
 ```makefile
-questa-m2a       # LlamaM2aTop 集成毕业
-verilator-m2a    # M2a smoke
+verilog-m2a      # LlamaM2aTop.v
+questa-m2a       # 集成毕业（默认 K=2048 M=2048；回归 batch M=4）
+verilator        # M1 控制流（VERILATOR_WAVE=1 可选波形）
+quartus-m2a      # LlamaM2aTop 资源/时序（见 top/quartus/）
 ```
 
-### B.3 依赖关系
+### B.3 Quartus 分层评估
+
+| 工程 | 路径 | 顶层 |
+|:---|:---|:---|
+| GEMV 子系统 | `gemvService64/quartus/` | `GemvService64`（~7K 行 RTL） |
+| 全系统 M2a | `top/quartus/` | `LlamaM2aTop`（~10K 行，`DdrAgentRowMem` M20K） |
+
+### B.4 依赖关系
 
 ```text
 a1 (gemv mac) ──► a2 (int4) ──► a4 (top)
@@ -1358,3 +1368,4 @@ a3 (ddr tile) ────────┘
 | v2 | 2026-06-25 | 扩充：Tile 概念、地址分工、scale 索引、FSM、接口、验证、开放项 |
 | v3 | 2026-06-25 | 定稿 **256b AXI ↔ bankLen=64 ↔ ActBuffer 1024b 宽读 ↔ GemvMacBeat**；DSP/吞吐修正；关闭 weightBytes/1-lane 开放项 |
 | v3.1 | 2026-06-25 | 新增 **§4.4 互联职责**（Top / Scheduler / Platform Designer 分工） |
+| v3.2 | 2026-06-29 | M2a RTL/TB/回归落地；`DdrAgentRowMem`；Quartus 工程；附录 B 与 Makefile 对齐 |

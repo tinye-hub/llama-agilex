@@ -31,6 +31,15 @@ Verilator **不支持**仿真 Quartus Agilex IP 黑盒子。
 | test1 happy path | token_id=0, seq_pos=7 | 2048 rmsNormOut beats，FP16 golden 比对（tolerance 1e-2），job_done=1，job_error=0 |
 | test2 OOB | token_id=128256 (vocabSize) | job_error=1，errorCode=1，无 DDR 读，无 rmsNormOut |
 
+### M2a 附加（`tb_llama_m2a_top.sv`）
+
+| 项 | 说明 |
+|:---|:---|
+| 路径 | M1 embed→RMSNorm + L0 `W_Q` GEMV |
+| DDR | `ddr_image.bin`（`make -C tools/ddr_pack pack`） |
+| Pass | rmsNormOut 2048 beat golden；`qOut` 行向量与参考比对；`job_done` |
+| 回归 smoke | batch 默认 `LLAMA_M2A_M=4`（见 `sim-matrix-job.sh`） |
+
 ## 前提
 
 ```bash
@@ -50,7 +59,7 @@ make questa-m2a          # M2a 毕业
 make questa-m1 WAVE=1    # 录制 WLF
 make questa VIEW=1       # Questa GUI 打开波形（需 DISPLAY）
 make questa NC_RUN=      # 本地 Questa license
-make verilator           # 控制流 only（彩色 PASS 见 sbt-runmain.sh）
+make verilator           # M1 控制流 only（默认无 VCD；VERILATOR_WAVE=1 可选）
 ```
 
 ## 文件说明
@@ -59,10 +68,11 @@ make verilator           # 控制流 only（彩色 PASS 见 sbt-runmain.sh）
 |:---|:---|
 | `run.sh` | 入口脚本（source set_env.sh，检查前提，vsim -c） |
 | `paths.tcl` | 仓库路径、simlib mapping、work dir、fp32Rsqrt LUT symlinks |
-| `compile_dut.tcl` | 编译 FP IP（复用 rmsNorm/compile_ips.tcl）+ LlamaM1Top.v + TB |
-| `run_compile.do` | 仅编译 |
-| `run_m1.do` | 编译 + 仿真 |
-| `tb_llama_m1_top.sv` | 主 TB：AXI4-Lite master tasks、axi_read_mem、rmsNormOut drain、FP golden 比对 |
+| `compile_dut.tcl` | 编译 FP IP + `LlamaM1Top.v` + M1 TB |
+| `compile_dut_m2a.tcl` | 编译 FP IP + `LlamaM2aTop.v` + M2a TB |
+| `run_m1.do` / `run_m2a.do` | 编译 + 仿真 |
+| `tb_llama_m1_top.sv` | M1 TB |
+| `tb_llama_m2a_top.sv` | M2a TB（RMSNorm + GEMV Q 输出 golden） |
 
 共享文件（不复制，通过 paths.tcl 路径引用）：
 

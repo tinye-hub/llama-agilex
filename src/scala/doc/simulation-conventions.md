@@ -25,9 +25,9 @@ make regression   # 全矩阵并行 nc（= make sim PARALLEL=1）
 
 ```bash
 cd src/scala
-make regression           # 推荐：7 job 并行（4 Verilator + 3 Questa）
-make verilator PARALLEL=1   # 4 个 Verilator job 并行
-make questa PARALLEL=1      # 3 个 Questa job 并行
+make regression           # 推荐：10 job 并行（5 Verilator + 5 Questa）
+make verilator PARALLEL=1   # 5 个 Verilator job 并行
+make questa PARALLEL=1      # 5 个 Questa job 并行
 make sim PARALLEL=1         # 同 make regression
 ```
 
@@ -39,8 +39,8 @@ nc run -r Taskerlist:b OSREL:RHEL8 RAM/4GB CORES/4 CGROUP:CORES -jpp fastest,pac
 
 | 变量 | 用途 | 行为 |
 |:---|:---|:---|
-| `NC_RUN` | 子模块 `make questa` / `make quartus` | `-I` 阻塞，Taskerlist:i 32GB |
-| `NC_RUN_BG` | `PARALLEL=1` 矩阵回归 | 无 `-I`，先全部提交再 `nc wait` |
+| `NC_RUN` | 子模块 `make questa` / `make quartus` | `-I` 阻塞，Taskerlist:i **RAM/32GB CORES/8** |
+| `NC_RUN_BG` | `PARALLEL=1` 矩阵回归 | 无 `-I`，先全部提交再 `nc wait`，**RAM/4GB CORES/4** |
 
 **Verilator batch 注意**：nc SNAPSHOT 会带上登录节点的 `XDG_RUNTIME_DIR=/run/user/<uid>`，batch 节点无法写入，sbt 会报 `AccessDeniedException`。`sim-matrix-job.sh` 在 batch 节点 `/tmp/sm-<hash>/` 建短路径 runtime。
 
@@ -63,6 +63,22 @@ make questa NC_RUN=      # 本机 license（不设则走 set_env.sh 的 batch nc
 ```
 
 `WAVE=1` 与 `VIEW=1` 互斥：`VIEW=1` 只打开已有波形，不重新跑仿真。
+
+## Verilator 波形（`VERILATOR_WAVE=1`）
+
+`ddrAgent` 与 `top` 的 row buffer 使用 `Mem.readAsync`（M20K 宽 beat）。Verilator 在 **默认开 VCD/trace** 时可能 SIGSEGV；Questa 不受影响。
+
+```bash
+# 默认：不开波形（回归 / smoke）
+make -C src/scala/top verilator
+make -C src/scala/ddrAgent verilator
+
+# 需要 VCD 时显式开启
+VERILATOR_WAVE=1 make -C src/scala/top verilator
+VERILATOR_WAVE=1 make -C src/scala/ddrAgent verilator
+```
+
+`LlamaM1TopSim` / `DdrAgentM1Sim` / `DdrAgentM2aSim` 均按此约定；FP 数值 golden 仍须 Questa。
 
 ## Verilator 彩色 PASS / FAIL
 
@@ -87,9 +103,19 @@ Questa TB 仍在 SV 里用 `$display("\033[32m********** PASS **********\033[0m"
 | 模块 | Verilator | Questa |
 |:---|:---|:---|
 | `rmsNorm/` | `make verilator` | `make questa` |
-| `top/` | `make verilator` | `make questa`（M1 毕业 TB：`test/questa/run.sh m1`） |
-| `ddrAgent/` | `make verilator` | `make questa` |
-| `llamaScheduler/` | `make verilator` | — |
+| `gemvService64/` | `make verilator` | `make questa` |
+| `ddrAgent/` | `make verilator`（M1）、`verilator-m2a` | `make questa`（M1+M2a 串行） |
+| `top/` | `make verilator`（M1 控制流） | `make questa`（M1）、`questa-m2a`（M2a W_Q） |
+| `llamaScheduler/` | `make verilator` | —（矩阵中 SKIP） |
+
+### 全矩阵回归（`make regression`）
+
+| # | 模块 | 目标 | 说明 |
+|:---:|:---|:---|:---|
+| 1–5 | rmsNorm, gemvService64, ddrAgent, top, llamaScheduler | `verilator` | 5 个并行 nc job |
+| 6–10 | rmsNorm, gemvService64, ddrAgent, top×2 | `questa` / `questa-m2a` | 5 个并行 nc job |
+
+`top questa-m2a` 在 batch 中默认 `LLAMA_M2A_M=4`（smoke，全 K=2048）；本地完整 M 可 `make questa-m2a M=2048`。
 
 ## 共享脚本与资产
 
@@ -101,4 +127,6 @@ Questa TB 仍在 SV 里用 `$display("\033[32m********** PASS **********\033[0m"
 | `src/scala/scripts/sim-matrix-job.sh` | nc batch 节点内执行 `make <target>` |
 | `src/scala/scripts/patch_verilator_make.sh` | Verilator 5.036+ `WData` 兼容 |
 | `simlib/quartus*_agilex5_questa*/` | Questa 设备库（预编译） |
-| `tools/ddr_pack/out/ddr_image_m1.bin` | M1 DDR preload（`top` / `ddrAgent` Questa） |
+| `tools/ddr_pack/out/ddr_image_m1.bin` | M1 DDR preload（`top` / `ddrAgent` Questa M1） |
+| `tools/ddr_pack/out/ddr_image.bin` | M2a 全量镜像（`top questa-m2a`） |
+| `tools/ddr_pack/out/ddr_fixture.bin` | M2a 单元 fixture（`ddrAgent questa-m2a`） |

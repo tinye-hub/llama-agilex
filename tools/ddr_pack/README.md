@@ -70,7 +70,7 @@ Total metadata scales ≈ 14.5 MiB (fits in 16 MiB `META` region).
 | `quantize_int4.py` | INT4_G128 quant + pack |
 | `ddr_image.py` | 1 GiB byte image |
 | `pack_weights.py` | Main packer CLI |
-| `gen_fixture.py` | Tiny fixture for DdrAgent sim |
+| `gen_fixture.py` | 小 fixture：`ddr_fixture.bin`（M1 行 + 4×32 B W_Q tile @ `ATTN_BASE`） |
 
 ## Python environment
 

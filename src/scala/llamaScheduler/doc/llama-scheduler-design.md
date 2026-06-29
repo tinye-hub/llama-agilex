@@ -225,13 +225,23 @@ Tend: dataOut tlast → job_done
 | 3 | 等待双 `MemDone` + `WAIT_RMSNORM` | ✓ |
 | 4 | `job_done` / 错误回报（`errorCode=1` OOB） | ✓ |
 
-集成验证：`top/make verilator`（控制流）、`top/make questa`（FP golden）。见 [simulation-conventions.md](../../doc/simulation-conventions.md)。
+集成验证：`top/make verilator`（M1 控制流）、`top/make questa`（M1 FP golden）、`top/make questa-m2a`（M2a）。见 [simulation-conventions.md](../../doc/simulation-conventions.md)。
+
+### 里程碑 2a（L0 W_Q GEMV）— **已实现**
+
+| # | 任务 | 状态 |
+|:---:|:---|:---:|
+| 1 | `LlamaSchedulerM2a`：RMSNorm 完成后发起 W_Q tile 读 | ✓ |
+| 2 | `MemCmd(GEMV_WEIGHT)` + scale preload | ✓ |
+| 3 | 与 `GemvService64` / `DdrCmdArb` 握手 | ✓ |
+
+集成验证：`top/make questa-m2a`；单元 `gemvService64/make questa`。
 
 ### 后续
 
 - 16 层 FSM，每层 2 次 γ 读 + final_norm
 - `JOB_PHASE` 控制 LM head 跳过
-- GemvService64 `MemCmd` 扩展
+- W_K / W_V / KV / LM_HEAD MemCmd 扩展
 
 ---
 
@@ -244,7 +254,8 @@ llamaScheduler/
 │   └── llama-scheduler-design.md
 ├── scala/
 │   ├── HpsJobCtrl.scala
-│   └── LlamaSchedulerM1.scala
+│   ├── LlamaSchedulerM1.scala
+│   └── LlamaSchedulerM2a.scala
 ├── test/
 │   └── LlamaSchedulerM1Sim.scala
 └── Makefile                # make verilator

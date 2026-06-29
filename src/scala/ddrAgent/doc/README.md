@@ -11,13 +11,14 @@
 | `../scala/DdrAgentBundles.scala` | `MemCmd`, `MemDone`, `DdrSinkId` |
 | `../scala/DdrAgentAxi.scala` | AXI4 参数（256-bit 主线；仿真可用 64-bit） |
 | `../scala/DdrAgentM1.scala` | 里程碑 1：`MemCmd` → AXI 读 → `embedOut` / `gammaOut` |
-| `../scala/DdrAgentM2.scala` | 里程碑 2a：M1 + `GEMV_WEIGHT` 32 B tile → `weightBeat`（256-bit） |
-| `../test/DdrAgentM1Sim.scala` | Verilator 仿真（官方 `AxiMemorySim` 作 AXI slave） |
-| `../test/DdrAgentM2aSim.scala` | Verilator M2a（embed/gamma + W_Q tile） |
+| `../scala/DdrAgentM2.scala` | 里程碑 2a：M1 + `GEMV_WEIGHT` tile + `scalePreload` |
+| `../scala/DdrAgentRowMem.scala` | 行缓冲：M20K 宽 beat RAM（`readAsync` + `writeBeat(enable=axi.r.fire)`） |
+| `../test/DdrAgentM1Sim.scala` | Verilator M1（64-bit AXI；`VERILATOR_WAVE=1` 可选波形） |
+| `../test/DdrAgentM2aSim.scala` | Verilator M2a（256-bit AXI；embed/gamma + W_Q tile） |
 | `../test/questa/` | Questa：`tb_ddr_agent_m1.sv` / `tb_ddr_agent_m2a.sv` + `axi_read_mem.sv` |
 | `../test/SimDdrImage.scala` | 加载 DDR bin（FP16 row + INT4 tile golden） |
 
-由 `top/LlamaM1Top` 例化。
+由 `top/LlamaM1Top` / `LlamaM2aTop` 例化。
 
 ## 仿真
 
@@ -34,8 +35,9 @@ make -C src/scala/ddrAgent questa-m2a           # 需 set_env.sh + questacorepri
 ```
 
 M1 preload：`tools/ddr_pack/out/ddr_image_m1.bin`  
-M2a preload：`tools/ddr_pack/out/ddr_fixture.bin`（可用 `DDR_IMAGE` 覆盖）  
-Verilator M1 用 64-bit AXI；M2a / Questa / 综合默认 256-bit（`make verilog-m2a AXI_WIDTH=256`）。
+M2a preload：`tools/ddr_pack/out/ddr_fixture.bin`（单元）或 `ddr_image.bin`（top 集成）  
+Verilator M1 用 64-bit AXI；M2a / Questa / 综合默认 256-bit（`make verilog-m2a AXI_WIDTH=256`）。  
+Verilator 默认不开波形（`VERILATOR_WAVE=1` 可选）；见 [simulation-conventions.md](../../doc/simulation-conventions.md)。
 
 约定：[simulation-conventions.md](../../doc/simulation-conventions.md)
 

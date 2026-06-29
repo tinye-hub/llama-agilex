@@ -7,29 +7,38 @@ Llama 3.2 1B on Intel Agilex 5 — SpinalHDL PL + HPS (GHRD).
 | 阶段 | 内容 | 状态 |
 |:---|:---|:---:|
 | **M1** | embed → RMSNorm L0 norm1 | ✓ |
-| **M2a** | GemvService64 + `W_Q`（L0） | 进行中 |
+| **M2a** | GemvService64 + L0 `W_Q` | ✓ Questa 毕业；Verilator smoke |
 | **M2b** | RoPE | 待做 |
 | **M2c** | Incremental GQA + KV cache | 待做 |
 | **M2d** | `W_O` + residual | 待做 |
 
 详见 [doc/milestone-m2.md](doc/milestone-m2.md)。
 
-### M1 回归
+### M1 / M2a 回归
 
-`token_id` → Scheduler → DdrAgent DDR read → RmsNorm L0 norm1 → 2048×FP16 out。
+M1：`token_id` → Scheduler → DdrAgent DDR read → RmsNorm L0 norm1 → 2048×FP16 out。
+
+M2a：M1 路径 + L0 `W_Q` GEMV → `qOut`。
 
 ```bash
 source activate.sh
-make -C tools/ddr_pack pack-m1
-cd src/scala/top && make questa       # FP 毕业考试（Questa + Quartus IP）
-cd src/scala/top && make verilator    # 控制流 smoke（Verilator）
+make -C tools/ddr_pack pack-m1          # M1 镜像
+make -C tools/ddr_pack pack             # M2a 全量镜像（含 INT4 W_Q）
+
+cd src/scala
+make regression                         # 10 项并行 nc 回归（推荐）
+# 或单项：
+cd src/scala/top && make questa         # M1 FP 毕业（Questa）
+cd src/scala/top && make questa-m2a     # M2a 毕业
+cd src/scala/top && make verilator      # M1 控制流 smoke
 ```
 
 ## 文档索引
 
 | 模块 | 设计文档 |
 |:---|:---|
-| Top | [src/scala/top/doc/llama-m1-top-design.md](src/scala/top/doc/llama-m1-top-design.md) |
+| Top | [src/scala/top/doc/](src/scala/top/doc/)（M1 设计 + M2a 目录） |
+| Quartus 评估 | [src/scala/top/quartus/](src/scala/top/quartus/) · [gemvService64/quartus/](src/scala/gemvService64/quartus/) |
 | Scheduler | [src/scala/llamaScheduler/doc/llama-scheduler-design.md](src/scala/llamaScheduler/doc/llama-scheduler-design.md) |
 | DdrAgent | [src/scala/ddrAgent/doc/ddr-agent-design.md](src/scala/ddrAgent/doc/ddr-agent-design.md) |
 | DDR 地址 | [src/scala/ddrMemoryMap/doc/ddr-memory-map.md](src/scala/ddrMemoryMap/doc/ddr-memory-map.md) |

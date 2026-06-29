@@ -73,7 +73,16 @@ make verilog-sim   # 仿真用（RmsNormAlteraIpSim 时序桩）
 
 详见 [test/questa/README.md](../test/questa/README.md) 与 `.cursor/rules/questa-simulation.mdc`。
 
-Verilator TB：`test/LlamaM1TopSim.scala`（`AxiLite4Driver` + `AxiMemorySim`，64-bit AXI）。
+Verilator TB：`test/LlamaM1TopSim.scala`（`AxiLite4Driver` + `AxiMemorySim`，64-bit AXI）。默认不开 VCD；`VERILATOR_WAVE=1` 可选波形（见 simulation-conventions）。
+
+## 7. 里程碑 2a 扩展
+
+M2a 顶层为 `LlamaM2aTop`（`LlamaSchedulerM2a` + `DdrAgentM2` + `GemvService64` + `DdrCmdArb`）。设计与验证入口：
+
+- [top/doc/README.md](README.md) — M2a 目录与命令
+- [test/questa/README.md](../test/questa/README.md) — `questa-m2a` 毕业 TB
+- [quartus/README.md](../quartus/README.md) — 资源/时序评估
+- [gemv-m2a-design.md](../../gemvService64/doc/gemv-m2a-design.md) — GEMV 机械细节
 
 ## 6. 参数
 

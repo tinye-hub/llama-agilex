@@ -96,7 +96,9 @@ MemDone: tag, error, sink_id
 AXI R data ──► row_buffer[4096 B] ──► beat_serializer ──► Axi4Stream master
 ```
 
-1. 收 `MemCmd`，发起 AXI 读，填满 `row_buffer`。
+**实现（M1/M2）**：`DdrAgentRowMem` — 每 AXI beat 一条 M20K 宽字（256-bit 主线为 32 B/entry，128 深）。`writeBeat` 仅在 `io.axi.r.fire` 时写入；STREAM 阶段用 `readAsync` + `outBeat` 槽索引输出 FP16。勿将 `enable=True` 常量化，否则 STREAM 期间会误写 `mem[0]`。
+
+1. 收 `MemCmd`，发起 AXI 读，填满 row buffer。
 2. 按小端 FP16 输出 2048 beat，`tlast` 在 beat 2047。
 3. `tuser` 来自 `axis_ctx`（`EMBED_ROW` 用 Profile A；`RMS_GAMMA` 的 `tuser` 仅调试）。
 4. 末 beat 握手完成后发 `MemDone`。
@@ -142,8 +144,17 @@ AXI R data ──► row_buffer[4096 B] ──► beat_serializer ──► Axi4
 - L0 norm1 γ → AR `0x1F50_0000`
 - 两侧 2048 beat 与 DDR preload 一致
 
-单元：`make -C src/scala/ddrAgent verilator`（64-bit AXI）、`questa`（256-bit AXI）。  
-集成：`make -C src/scala/top questa`。
+单元：`make -C src/scala/ddrAgent verilator`（M1，64-bit AXI）、`questa-m1` / `questa-m2a`（256-bit AXI）。  
+集成：`make -C src/scala/top questa`（M1）、`questa-m2a`（M2a）。
+
+### 5.3 里程碑 2a — GEMV_WEIGHT（`DdrAgentM2.scala`，**已实现**）
+
+| sink | 行为 |
+|:---|:---|
+| `GEMV_WEIGHT` | 读 `byte_len`（通常 32 B）→ 单拍 `weightBeat`（256-bit INT4 tile） |
+| `SCALE_PRELOAD` | 读 scale 表 → `scaleOut` FP16 stream |
+
+Questa：`tb_ddr_agent_m2a.sv` 校验 embed/gamma + 4 个 W_Q tile @ `ATTN_BASE`。
 
 ---
 
@@ -152,7 +163,8 @@ AXI R data ──► row_buffer[4096 B] ──► beat_serializer ──► Axi4
 | 阶段 | 内容 | 状态 |
 |:---|:---|:---:|
 | **M1** | `MemCmd`/`MemDone`、`DdrAgentM1`（AXI 读 + embed/gamma stream） | ✓ |
-| **M2** | `GEMV_WEIGHT`（M2a ✓）、`KV_READ`/`KV_WRITE` | KV 待做 |
+| **M2a** | `GEMV_WEIGHT` + `SCALE_PRELOAD`（`DdrAgentM2`） | ✓ |
+| **M2** | `KV_READ`/`KV_WRITE` | 待做 |
 | **M3** | `LM_HEAD` 顺序扫描、写通路 | 待做 |
 
 ---
@@ -167,10 +179,13 @@ ddrAgent/
 ├── scala/
 │   ├── DdrAgentBundles.scala   # MemCmd, MemDone, DdrSinkId
 │   ├── DdrAgentAxi.scala       # AXI4 参数
-│   └── DdrAgentM1.scala        # 里程碑 1 实现
+│   ├── DdrAgentRowMem.scala      # M20K 行缓冲
+│   ├── DdrAgentM1.scala        # 里程碑 1
+│   └── DdrAgentM2.scala        # 里程碑 2a
 ├── test/
 │   ├── DdrAgentM1Sim.scala
+│   ├── DdrAgentM2aSim.scala
 │   ├── SimDdrImage.scala
-│   └── questa/
-└── Makefile                    # verilator | questa | verilog
+│   └── questa/                 # m1 + m2a TB
+└── Makefile                    # verilator | questa-m1 | questa-m2a | verilog
 ```

@@ -41,7 +41,7 @@ quartus_sh -t scripts/synth_fit_sta.tcl
 
 | 工程 | 顶层 | 典型 Verilog 规模 | 用途 |
 |:---|:---|:---|:---|
-| 本工程 | `GemvService64` | ~7K 行 | GEMV DSP/BRAM 基线 |
-| `top/quartus` | `LlamaM2aTop` | ~550K 行 | 全系统集成（含 ddrAgent 等） |
+| 本工程 | `GemvService64` | ~7K 行 | GEMV DSP/BRAM 基线（~5 min syn+fit+sta） |
+| `top/quartus` | `LlamaM2aTop` | ~10K 行（rowMem 用 M20K 后） | 全系统集成 |
 
 MAC-only 资源评估可另跑 `make verilog-mac` 后在 GUI 中替换顶层为 `GemvMacBeat.v`（后续可加独立 revision）。

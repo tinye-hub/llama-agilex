@@ -10,12 +10,13 @@
 |:---|:---|
 | `../scala/HpsJobCtrl.scala` | AXI4-Lite MMIO 寄存器（`AxiLite4SlaveFactory`） |
 | `../scala/LlamaSchedulerM1.scala` | 里程碑 1 调度 FSM |
+| `../scala/LlamaSchedulerM2a.scala` | 里程碑 2a：M1 + L0 W_Q GEMV 调度 |
 
 | 测试 | 说明 |
 |:---|:---|
 | `../test/LlamaSchedulerM1Sim.scala` | Verilator 单元仿真（mock MemCmd / MemDone） |
 
-由 `top/LlamaM1Top` 例化。
+由 `top/LlamaM1Top` / `LlamaM2aTop` 例化。
 
 ## 相关文档
 

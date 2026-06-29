@@ -29,7 +29,7 @@ M2d   W_O 投影 + residual add
 
 | 里程碑 | 输入 | 输出 | 新增模块 / 扩展 | 毕业考试 |
 |:---|:---|:---|:---|:---|
-| **M2a** | RMSNorm 2048 FP16 | Q（及可选 K/V）向量 | `GemvService64`、`DdrAgent` TileSink、`Scheduler` GEMV 状态 | `gemvService64/make questa` + `top/make questa-m2a` |
+| **M2a** | RMSNorm 2048 FP16 | Q（L0 W_Q，K=M 可 smoke） | `GemvService64`、`DdrAgentM2`、`SchedulerM2a` | `gemvService64/make questa` + `top/make questa-m2a` | ✓ |
 | **M2b** | Q、K + `seq_pos` | RoPE(Q)、RoPE(K) | `SerialRoPE`、RoPE 表 | `rope/make questa` |
 | **M2c** | RoPE Q/K、V、KV cache | per-head attn out（2048 维前） | `GqaAttention`、KV sink | `attention/make questa` |
 | **M2d** | concat heads | attn 子层输出 + residual | `W_O` GEMV、`ResidualAdd` | `top/make questa-m2d` |
@@ -79,8 +79,9 @@ M2d   W_O 投影 + residual add
 
 | 里程碑 | DDR 镜像 | 说明 |
 |:---|:---|:---|
-| M1 | `make -C tools/ddr_pack pack-m1` | embed + γ |
-| M2a+ | `make -C tools/ddr_pack pack` | + INT4 attn/ffn + metadata scales |
+| M1 | `make -C tools/ddr_pack pack-m1` | embed + γ → `ddr_image_m1.bin` |
+| M2a 单元 | `make -C tools/ddr_pack fixture` | 小镜像 + 4×W_Q tile → `ddr_fixture.bin` |
+| M2a+ | `make -C tools/ddr_pack pack` | 全量 → `ddr_image.bin`（INT4 attn/ffn + scales） |
 
 M2a 起启用 `ATTN_BASE`（`0x2000_0000`）与 `META_ATTN_SCALE_BASE`（`0x3F00_1000`）。
 
