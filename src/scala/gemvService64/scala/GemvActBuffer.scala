@@ -14,6 +14,8 @@ import scala.language.postfixOps
  * collector — same idea as llama-fpga `Serial2Parallel`). The MAC reads one
  * wide word per macBeat with `tileSel = t`.
  *
+ * Wide-word BRAM writes are registered one cycle after lane assembly (timing).
+ *
  * Lane mapping: lane `j` (= `x[t*64 + j]`) occupies bits `[j*16 +: 16]` of the
  * wide word — low index in low bits, matching the INT4 nibble unpack order.
  *
@@ -33,11 +35,11 @@ class GemvActBuffer(g: GemvGenerics) extends Component {
     val actIn   = slave(Stream(Bits(g.fp16Width bits)))
     /** Wide-read tile select, `0 .. tilesPerRow-1`. */
     val tileSel = in UInt (wordIdxW bits)
-    /** Wide read data: 64 × FP16 (combinational). */
+    /** Wide read data: 64 × FP16 (registered BRAM output). */
     val tileData = out Bits (wordWidth bits)
     /** High once the full vector (all wide words) has been written. */
     val loaded = out Bool ()
-    /** Pulse on the last accepted activation beat. */
+    /** Pulse when the last wide word is committed to BRAM (1 cycle after last lane beat). */
     val lastWrite = out Bool ()
     /** Reset write progress / `loaded` to accept a fresh vector. */
     val clear = in Bool ()
@@ -62,10 +64,24 @@ class GemvActBuffer(g: GemvGenerics) extends Component {
   }
 
   val doWordWrite = io.actIn.fire && laneLast
+
+  // 1-cycle write pipe: laneIdx/laneBuf → wordNext assembly → BRAM (timing).
+  val wrEn   = RegInit(False)
+  val wrAddr = Reg(UInt(wordIdxW bits))
+  val wrData = Reg(Bits(wordWidth bits))
+  val wrLast = Reg(Bool())
+  when(doWordWrite) {
+    wrAddr := wordIdx
+    wrData := wordNext
+    wrLast := wordLast
+    wrEn   := True
+  } otherwise {
+    wrEn := False
+  }
   mem.write(
-    address = wordIdx,
-    data    = wordNext,
-    enable  = doWordWrite
+    address = wrAddr,
+    data    = wrData,
+    enable  = wrEn
   )
 
   when(io.actIn.fire) {
@@ -74,7 +90,6 @@ class GemvActBuffer(g: GemvGenerics) extends Component {
       laneIdx := 0
       when(wordLast) {
         wordIdx := 0
-        loaded  := True
       } otherwise {
         wordIdx := wordIdx + 1
       }
@@ -83,13 +98,20 @@ class GemvActBuffer(g: GemvGenerics) extends Component {
     }
   }
 
+  when(wrEn && wrLast) {
+    loaded := True
+  }
+
   when(io.clear) {
     laneIdx := 0
     wordIdx := 0
     loaded  := False
   }
 
-  io.tileData  := mem.readAsync(io.tileSel)
+  // Registered read port: BRAM Tco → tileOut; MAC samples on macBeatEn (1 cycle after beatFire).
+  val tileOut = Reg(Bits(wordWidth bits))
+  tileOut := mem.readAsync(io.tileSel)
+  io.tileData := tileOut
   io.loaded    := loaded
-  io.lastWrite := doWordWrite && wordLast
+  io.lastWrite := wrEn && wrLast
 }

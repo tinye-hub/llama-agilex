@@ -2,17 +2,14 @@
 #
 #   make verilog          Spinal -> gen/verilog/LlamaM1Top.v  (Quartus FP IP, 256-bit AXI)
 #   make verilog-sim      same with RmsNorm sim stubs (no Quartus black boxes)
-#   make verilator        Verilator control-flow smoke (FP via questa)
 #   make questa           Questa M1 graduation: real FP IPs + FP golden
 #   make questa-m2a       Questa M2a graduation: M1 + L0 W_Q GEMV
 #   make quartus-m2a      Quartus syn+fit+sta on LlamaM2aTop (no bitstream)
 #
 # Questa variants:  make questa WAVE=1   |   make questa VIEW=1
-# Verilator PASS/FAIL colors: scripts/sbt-runmain.sh (see doc/simulation-conventions.md)
 #
-# NOTE: Verilator cannot simulate Quartus Agilex IP blackboxes.
-#       FP numerical accuracy MUST be verified via questa (Questa + real IPs).
-#       See .cursor/rules/questa-simulation.mdc for details.
+# FP numerical accuracy MUST be verified via Questa (real Quartus IPs).
+# See .cursor/rules/questa-simulation.mdc for details.
 
 SCALA_ROOT  := $(abspath ..)
 REPO_ROOT   := $(abspath ../../..)
@@ -30,7 +27,6 @@ export NC_RUN
 export NC_RUN_GUI
 
 export PATH := $(SCALA_ROOT)/scripts:$(PATH)
-export VERILATOR_REAL_MAKE := /usr/bin/make
 export LLAMA_M2A_DIM := $(DIM)
 export LLAMA_M2A_M   := $(M)
 
@@ -47,7 +43,7 @@ endif
         questa questa-m1 questa-m2a questa-run questa-run-m1 questa-run-m2a \
         questa-view questa-view-m1 questa-view-m2a \
         quartus-m2a quartus-m2a-report quartus-m2a-all \
-        verilator clean clean-verilator clean-questa clean-quartus
+        clean clean-questa clean-quartus
 
 all: verilog
 
@@ -55,7 +51,6 @@ help:
 	@echo "top Makefile (cwd=$(CURDIR))"
 	@echo "  verilog          -> gen/verilog/LlamaM1Top.v (Quartus FP IP, 256-bit AXI)"
 	@echo "  verilog-sim      -> gen/verilog/LlamaM1Top.v (timing stubs, no real FP)"
-	@echo "  verilator        Verilator control-flow smoke (FP golden -> questa)"
 	@echo "  questa-m1        verilog + Questa M1 graduation (FP golden check)"
 	@echo "  questa-m2a       verilog-m2a + Questa M2a (K=$(DIM) M=$(M), ddr_image.bin)"
 	@echo "  questa-m2a M=4   smoke: few output rows, full K (default in make regression)"
@@ -63,8 +58,10 @@ help:
 	@echo "  questa WAVE=1    M1 WLF $(QUESTA_WLF_M1); M2a WLF $(QUESTA_WLF_M2A)"
 	@echo "  questa VIEW=1    Open WLF in Questa GUI ($(NC_RUN_GUI) vsim -view)"
 	@echo "  questa-compile   Questa compile only"
-	@echo "  quartus-m2a      verilog-m2a + Quartus syn+fit+sta (K=$(DIM) M=$(M), no .sof/.rbf)"
+	@echo "  quartus-m2a      verilog-m2a + Quartus syn+fit+sta (NC_RUN batch after activate.sh)"
 	@echo "  quartus-m2a-report  fit + STA summary table"
+	@echo "  quartus-m2a-all   quartus-m2a + report"
+	@echo "  NC_RUN= make quartus-m2a-all  run on login node, skip nc batch"
 	@echo "  clean            remove gen/"
 	@echo ""
 	@echo "  NC_RUN:     $(if $(NC_RUN),$(NC_RUN),(empty — local run))"
@@ -135,7 +132,7 @@ questa-view-m2a:
 questa-view: questa-view-m1
 
 quartus-m2a: verilog-m2a
-	cd quartus && $(NC_RUN) $(QUARTUS) -t scripts/synth_fit_sta.tcl
+	$(SCALA_ROOT)/scripts/quartus-run.sh quartus -t scripts/synth_fit_sta.tcl
 
 quartus-m2a-report:
 	@FIT=quartus/output_files/$(PROJECT).fit.summary; \
@@ -163,15 +160,6 @@ quartus-m2a-report:
 
 quartus-m2a-all: quartus-m2a quartus-m2a-report
 
-verilator: clean-verilator
-	@test -f "$(DDR_IMAGE_M1)" || { \
-	  echo "Missing $(DDR_IMAGE_M1) — run: make -C $(REPO_ROOT)/tools/ddr_pack pack-m1"; exit 1; }
-	cd $(SCALA_ROOT) && DDR_IMAGE="$(DDR_IMAGE_M1)" \
-	  $(SCALA_ROOT)/scripts/sbt-runmain.sh top.LlamaM1TopSim
-
-clean-verilator:
-	rm -rf gen/sim 2>/dev/null || true
-
 clean-questa:
 	rm -rf test/questa/work test/questa/transcript
 
@@ -181,5 +169,5 @@ clean-quartus:
 	       quartus/qdb quartus/dni quartus/default.qsf quartus/default.*.rpt \
 	       quartus/*.qsf.backup quartus/tmp-clearbox
 
-clean: clean-verilator clean-questa clean-quartus
+clean: clean-questa clean-quartus
 	rm -rf gen

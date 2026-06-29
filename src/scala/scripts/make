@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-# On PATH ahead of system make: patch Spinal Verilator JNI wrapper, then invoke real make.
-set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-if [[ "$*" == *".mk"* ]]; then
-  exec "${SCRIPT_DIR}/patch_verilator_make.sh" "$@"
-fi
-exec "${VERILATOR_REAL_MAKE:-/usr/bin/make}" "$@"

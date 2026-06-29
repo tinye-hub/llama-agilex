@@ -69,11 +69,21 @@ class GemvService64(
   val mac     = new GemvMacBeat(g, toFp32_func, toFp16_func, mul_func, add_func, groupAcc_func)
   val outSer  = new GemvOutputSer(g)
 
-  // Activation in (drop AXIS framing, keep data)
+  // 1-cycle actIn pipe: breaks rmsNorm outFifo → actBuf BRAM write timing path.
   val actStream = Stream(Bits(g.fp16Width bits))
-  actStream.valid   := io.actIn.valid
-  actStream.payload := io.actIn.payload.data
-  io.actIn.ready    := actStream.ready
+  val actInValid = RegInit(False)
+  val actInData  = Reg(Bits(g.fp16Width bits))
+  io.actIn.ready := !actInValid || actStream.ready
+  val actInFire   = actInValid && actStream.ready
+  val actStageFire = io.actIn.valid && (!actInValid || actStream.ready)
+  when(actStageFire) {
+    actInValid := True
+    actInData  := io.actIn.payload.data
+  }.elsewhen(actInFire) {
+    actInValid := False
+  }
+  actStream.valid   := actInValid
+  actStream.payload := actInData
   actBuf.io.actIn   << actStream
 
   scaleR.io.loadIn  << io.scaleLoad
@@ -163,16 +173,27 @@ class GemvService64(
     (tCmp >> log2Up(g.tilesPerGroup)).resize(grpIdxW)
   scaleR.io.groupIndex := groupIndex.resized
 
+  // 1-cycle MAC beat delay: beatFire latches addr/weight; macBeatEn consumes registered actBuf read.
+  val macBeatEn = RegNext(beatFire, False)
+  val wWideR    = Reg(Bits(g.tileFp16Width bits))
+  val scaleFp16R = Reg(Bits(g.fp16Width bits))
+  val beatLastR = Reg(Bool())
+  when(beatFire) {
+    wWideR     := unpack.io.wWide
+    scaleFp16R := scaleR.io.scaleFp16
+    beatLastR  := tCmpLast
+  }
+
   val scaleRaw = Flow(Bits(g.fp16Width bits))
-  scaleRaw.valid   := beatFire
-  scaleRaw.payload := scaleR.io.scaleFp16
+  scaleRaw.valid   := macBeatEn
+  scaleRaw.payload := scaleFp16R
   val scaleFp32 = toFp32_func(scaleRaw)
 
-  mac.io.beatValid := beatFire
+  mac.io.beatValid := macBeatEn
   mac.io.xWide     := actBuf.io.tileData
-  mac.io.wWide     := unpack.io.wWide
+  mac.io.wWide     := wWideR
   mac.io.scaleFp32 := scaleFp32.payload
-  mac.io.beatLast  := tCmpLast
+  mac.io.beatLast  := beatLastR
 
   when(beatFire) {
     when(tCmpLast) {

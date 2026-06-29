@@ -14,7 +14,7 @@
 
 | 测试 | 说明 |
 |:---|:---|
-| `../test/LlamaSchedulerM1Sim.scala` | Verilator 单元仿真（mock MemCmd / MemDone） |
+| `../test/questa/tb_llama_scheduler_m1.sv` | Questa 单元仿真（mock MemCmd / MemDone） |
 
 由 `top/LlamaM1Top` / `LlamaM2aTop` 例化。
 

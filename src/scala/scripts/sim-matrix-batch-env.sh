@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Batch-node environment for sim-matrix nc jobs (Verilator/sbt + Questa).
+# Batch-node environment for sim-matrix nc jobs (sbt + Questa).
 #
 # 1) NC SNAPSHOT may set XDG_RUNTIME_DIR=/run/user/<uid> (missing on batch).
 # 2) Parallel jobs on one host need distinct sbt boot sockets (EADDRINUSE).
@@ -45,4 +45,45 @@ sim_matrix_install_sbt_shim() {
 
 sim_matrix_batch_cleanup() {
   [[ -n "${SIM_MATRIX_LOCAL_ROOT:-}" ]] && rm -rf "$SIM_MATRIX_LOCAL_ROOT"
+}
+
+# Batch nodes must load Java/sbt/Questa explicitly — nc SNAPSHOT alone is unreliable.
+sim_matrix_source_activate() {
+  local repo_root="${1:?repo_root required}"
+  local activate="${repo_root}/activate.sh"
+  if [[ ! -f "$activate" ]]; then
+    echo "[sim-matrix-job] ERROR: missing $activate" >&2
+    return 1
+  fi
+  local saved_nc_run="${NC_RUN-}"
+  local saved_nc_run_gui="${NC_RUN_GUI-}"
+  local saved_nc_run_bg="${NC_RUN_BG-}"
+  # shellcheck disable=SC1090
+  source "$activate"
+  export NC_RUN="$saved_nc_run"
+  export NC_RUN_GUI="${saved_nc_run_gui}"
+  export NC_RUN_BG="${saved_nc_run_bg}"
+}
+
+sim_matrix_verify_toolchain() {
+  local make_target="${1:?make_target required}"
+  local missing=0
+
+  for tool in java sbt; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+      echo "[sim-matrix-job] ERROR: $tool not on PATH (need activate.sh)" >&2
+      missing=1
+    fi
+  done
+
+  case "$make_target" in
+    questa|questa-*)
+      if ! command -v vsim >/dev/null 2>&1; then
+        echo "[sim-matrix-job] ERROR: vsim not on PATH (need activate.sh)" >&2
+        missing=1
+      fi
+      ;;
+  esac
+
+  return "$missing"
 }

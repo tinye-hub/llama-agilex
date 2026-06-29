@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Run verilator / questa across Spinal modules; print a PASS/FAIL summary table.
+# Run questa across Spinal modules; print a PASS/FAIL summary table.
 #
-# Serial (default):  scripts/sim-matrix.sh <verilator|questa|sim>
+# Serial (default):  scripts/sim-matrix.sh questa
 #
-# Parallel (batch):  PARALLEL=1 scripts/sim-matrix.sh <verilator|questa|sim>
+# Parallel (batch):  PARALLEL=1 scripts/sim-matrix.sh questa
 #   One background nc job per module (NC_RUN_BG / Taskerlist:b 4GB 4 cores),
 #   then nc wait, harvest logs under src/scala/out/logs/<run_id>/.
 set -uo pipefail
 
 usage() {
-  echo "usage: sim-matrix.sh <verilator|questa|sim>" >&2
+  echo "usage: sim-matrix.sh questa" >&2
   echo "  PARALLEL=1   all targets via background nc run (NC_RUN_BG), then nc wait" >&2
   exit 2
 }
@@ -17,7 +17,7 @@ usage() {
 [[ $# -eq 1 ]] || usage
 MODE="$1"
 case "$MODE" in
-  verilator|questa|sim) ;;
+  questa) ;;
   *) usage ;;
 esac
 
@@ -34,6 +34,7 @@ FAIL_RE='\*{10} FAIL \*{10}'
 
 declare -a SUMMARY=()
 declare -a PAR_JOBS=()   # mod|make_target|display|log|jobid
+declare -A PAR_REPORTED=()  # jobid -> 1 (live PASS/FAIL already printed)
 FAIL_COUNT=0
 PASS_COUNT=0
 SKIP_COUNT=0
@@ -77,6 +78,55 @@ parse_job_id() {
 nc_job_status() {
   local jid="$1"
   nc info "$jid" 2>/dev/null | awk '/^Status[[:space:]]/{print $2; exit}'
+}
+
+announce_live_result() {
+  local mod="$1" display="$2" res="$3" jid="$4" log="$5" detail="${6:-}"
+  local log_base=""
+  [[ -n "$log" ]] && log_base="$(basename "$log")"
+  case "$res" in
+    PASS) printf '\033[32m>> PASS %-18s %-12s\033[0m' "$mod" "$display" ;;
+    FAIL) printf '\033[31m>> FAIL %-18s %-12s\033[0m' "$mod" "$display" ;;
+    *)    printf '>> %-4s %-18s %-12s' "$res" "$mod" "$display" ;;
+  esac
+  printf '  JobId=%s' "$jid"
+  [[ -n "$log_base" ]] && printf '  log=%s' "$log_base"
+  [[ -n "$detail" ]] && printf '  (%s)' "$detail"
+  echo ""
+}
+
+poll_nc_job_outcomes() {
+  local row mod _mt display log jid status pass fail detail
+  for row in "${PAR_JOBS[@]}"; do
+    IFS='|' read -r mod _mt display log jid <<<"$row"
+    [[ -n "${PAR_REPORTED[$jid]:-}" ]] && continue
+
+    status="$(nc_job_status "$jid")"
+    pass=0
+    fail=0
+    if [[ -f "$log" ]]; then
+      pass="$(count_banner "$log" "$PASS_RE")"
+      fail="$(count_banner "$log" "$FAIL_RE")"
+    fi
+
+    if (( fail > 0 )); then
+      detail="fail banner"
+      (( pass > 0 )) && detail="${pass}×PASS, ${fail}×FAIL"
+      announce_live_result "$mod" "$display" FAIL "$jid" "$log" "$detail"
+      PAR_REPORTED[$jid]=1
+    elif (( pass > 0 )); then
+      detail=""
+      (( pass > 1 )) && detail="${pass}×PASS"
+      announce_live_result "$mod" "$display" PASS "$jid" "$log" "$detail"
+      PAR_REPORTED[$jid]=1
+    elif [[ "$status" == Failed ]]; then
+      announce_live_result "$mod" "$display" FAIL "$jid" "$log" "nc Failed"
+      PAR_REPORTED[$jid]=1
+    elif [[ "$status" == Done ]]; then
+      announce_live_result "$mod" "$display" FAIL "$jid" "$log" "nc Done, no PASS banner"
+      PAR_REPORTED[$jid]=1
+    fi
+  done
 }
 
 evaluate_result() {
@@ -184,14 +234,6 @@ submit_nc_bg() {
   PAR_JOBS+=("${mod}|${make_target}|${display_target}|${log}|${jid}")
 }
 
-submit_verilator_jobs() {
-  submit_nc_bg rmsNorm verilator verilator
-  submit_nc_bg gemvService64 verilator verilator
-  submit_nc_bg ddrAgent verilator verilator
-  submit_nc_bg top verilator verilator
-  submit_nc_bg llamaScheduler verilator verilator
-}
-
 submit_questa_jobs() {
   if [[ ! -f "$DDR_IMAGE" ]]; then
     echo "WARNING: missing $DDR_IMAGE"
@@ -209,7 +251,7 @@ submit_questa_jobs() {
   submit_nc_bg ddrAgent questa questa
   submit_nc_bg top questa questa
   submit_nc_bg top questa-m2a questa-m2a
-  record llamaScheduler questa SKIP "no Questa TB"
+  submit_nc_bg llamaScheduler questa questa
 }
 
 wait_nc_jobs() {
@@ -232,17 +274,18 @@ wait_nc_jobs() {
   echo "  running: ncjobs -r"
   echo "  done:    ncjobs -d -f"
   echo "  log:     nc info -l <JobId>"
-  echo -n "  progress: "
+  echo "  live:    >> PASS/FAIL printed below as each job finishes"
+  echo ""
 
   local wait_rc=0
   nc wait -q -poll "$poll_ms" "${jids[@]}" &
   local wait_pid=$!
   while kill -0 "$wait_pid" 2>/dev/null; do
+    poll_nc_job_outcomes
     sleep "$dot_sec"
-    printf '.'
   done
+  poll_nc_job_outcomes
   wait "$wait_pid" || wait_rc=$?
-  echo ""
   echo "nc wait finished (exit $wait_rc)"
 }
 
@@ -268,8 +311,6 @@ harvest_nc_logs() {
   done
 }
 
-# NC_RUN_BG comes from set_env.sh (via activate.sh). make regression may run without
-# a prior manual source — load EDA modules here so nc snapshot is complete.
 ensure_batch_env() {
   if [[ -n "${NC_RUN_BG:-}" ]] && command -v nc >/dev/null 2>&1; then
     return 0
@@ -292,6 +333,14 @@ ensure_batch_env() {
     echo "PARALLEL=1: nc not on PATH after activate.sh (need aap module)" >&2
     exit 2
   fi
+  if ! command -v sbt >/dev/null 2>&1; then
+    echo "PARALLEL=1: sbt not on PATH after activate.sh — run: source ../../activate.sh" >&2
+    exit 2
+  fi
+  if ! command -v vsim >/dev/null 2>&1; then
+    echo "PARALLEL=1: vsim not on PATH after activate.sh (need questacoreprime)" >&2
+    exit 2
+  fi
 }
 
 run_nc_parallel() {
@@ -303,32 +352,13 @@ run_nc_parallel() {
   (cd "$SCALA_ROOT" && sbt -batch "exit") || echo "WARNING: sbt warm-up failed" >&2
   echo ""
 
-  case "$MODE" in
-    verilator)
-      submit_verilator_jobs
-      ;;
-    questa)
-      submit_questa_jobs
-      ;;
-    sim)
-      submit_verilator_jobs
-      submit_questa_jobs
-      ;;
-  esac
+  submit_questa_jobs
 
   wait_nc_jobs
   harvest_nc_logs
 
   echo ""
   echo "Artifacts: $LOG_DIR"
-}
-
-run_verilator_suite() {
-  run_make_serial rmsNorm verilator verilator
-  run_make_serial gemvService64 verilator verilator
-  run_make_serial ddrAgent verilator verilator
-  run_make_serial top verilator verilator
-  run_make_serial llamaScheduler verilator verilator
 }
 
 run_questa_suite_serial() {
@@ -348,7 +378,7 @@ run_questa_suite_serial() {
   run_make_serial ddrAgent questa questa
   run_make_serial top questa questa
   run_make_serial top questa-m2a questa-m2a
-  record llamaScheduler questa SKIP "no Questa TB"
+  run_make_serial llamaScheduler questa questa
 }
 
 print_summary() {
@@ -381,11 +411,7 @@ print_summary() {
 }
 
 summary_title() {
-  case "$MODE" in
-    verilator) echo "Verilator regression summary" ;;
-    questa)    echo "Questa regression summary" ;;
-    sim)       echo "Full simulation summary (verilator + questa)" ;;
-  esac
+  echo "Questa regression summary"
 }
 
 parallel_suffix() {
@@ -397,14 +423,7 @@ parallel_suffix() {
 if [[ "$PARALLEL" == 1 ]]; then
   run_nc_parallel
 else
-  case "$MODE" in
-    verilator) run_verilator_suite ;;
-    questa)    run_questa_suite_serial ;;
-    sim)
-      run_verilator_suite
-      run_questa_suite_serial
-      ;;
-  esac
+  run_questa_suite_serial
 fi
 
 print_summary "$(summary_title)$(parallel_suffix)"

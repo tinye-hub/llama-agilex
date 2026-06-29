@@ -2,8 +2,6 @@
 #
 #   make verilog-m1    Spinal -> gen/verilog/DdrAgentM1.v
 #   make verilog-m2a   Spinal -> gen/verilog/DdrAgentM2.v
-#   make verilator     Verilator DdrAgentM1Sim (64-bit AXI)
-#   make verilator-m2a Verilator DdrAgentM2aSim (256-bit AXI)
 #   make questa-m1     Questa DdrAgentM1 + ddr_image_m1.bin
 #   make questa-m2a    Questa DdrAgentM2 + ddr_fixture.bin (W_Q tiles)
 #
@@ -23,7 +21,6 @@ export NC_RUN
 export NC_RUN_GUI
 
 export PATH := $(SCALA_ROOT)/scripts:$(PATH)
-export VERILATOR_REAL_MAKE := /usr/bin/make
 export DDR_AGENT_AXI_WIDTH := $(AXI_WIDTH)
 
 QUESTA_DIR      := test/questa
@@ -35,19 +32,17 @@ ifeq ($(WAVE),1)
 export QUESTA_WAVE := 1
 endif
 
-.PHONY: all help verilog verilog-m1 verilog-m2a verilator verilator-m2a \
+.PHONY: all help verilog verilog-m1 verilog-m2a \
 	questa questa-m1 questa-m2a questa-compile questa-compile-m1 questa-compile-m2a \
 	questa-run questa-run-m1 questa-run-m2a questa-view questa-view-m1 questa-view-m2a \
-	clean clean-verilator clean-questa
+	clean clean-questa
 
-all: verilator
+all: questa
 
 help:
 	@echo "ddrAgent Makefile (cwd=$(CURDIR))"
 	@echo "  verilog-m1       AXI_WIDTH=$(AXI_WIDTH) -> gen/verilog/DdrAgentM1.v"
 	@echo "  verilog-m2a      AXI_WIDTH=$(AXI_WIDTH) -> gen/verilog/DdrAgentM2.v"
-	@echo "  verilator        DdrAgentM1Sim (64-bit AXI, DDR_IMAGE=$(DDR_IMAGE_M1))"
-	@echo "  verilator-m2a    DdrAgentM2aSim (256-bit AXI, DDR_IMAGE=$(DDR_IMAGE_M2A))"
 	@echo "  questa-m1        verilog-m1 + Questa M1 TB"
 	@echo "  questa-m2a       verilog-m2a + Questa M2a TB (GEMV_WEIGHT tiles)"
 	@echo "  questa           alias for questa-m1"
@@ -63,18 +58,6 @@ verilog-m2a:
 	cd $(SCALA_ROOT) && DDR_AGENT_AXI_WIDTH=$(AXI_WIDTH) $(SBT) "runMain ddrAgent.DdrAgentM2Gen"
 
 verilog: verilog-m1
-
-verilator: clean-verilator
-	@test -f "$(DDR_IMAGE_M1)" || { \
-	  echo "Missing $(DDR_IMAGE_M1) — run: make -C $(REPO_ROOT)/tools/ddr_pack pack-m1"; exit 1; }
-	cd $(SCALA_ROOT) && DDR_IMAGE="$(DDR_IMAGE_M1)" \
-	  $(SCALA_ROOT)/scripts/sbt-runmain.sh ddrAgent.DdrAgentM1Sim
-
-verilator-m2a: clean-verilator
-	@test -f "$(DDR_IMAGE_M2A)" || { \
-	  echo "Missing $(DDR_IMAGE_M2A) — run: make -C $(REPO_ROOT)/tools/ddr_pack fixture"; exit 1; }
-	cd $(SCALA_ROOT) && DDR_IMAGE="$(DDR_IMAGE_M2A)" DDR_AGENT_AXI_WIDTH=$(AXI_WIDTH) \
-	  $(SCALA_ROOT)/scripts/sbt-runmain.sh ddrAgent.DdrAgentM2aSim
 
 questa-compile-m1: verilog-m1
 	cd $(QUESTA_DIR) && DDR_AGENT_AXI_WIDTH=$(AXI_WIDTH) DDR_IMAGE="$(DDR_IMAGE_M1)" \
@@ -128,11 +111,8 @@ questa-view-m2a:
 
 questa-view: questa-view-m1
 
-clean-verilator:
-	rm -rf gen/sim 2>/dev/null || true
-
 clean-questa:
 	rm -rf test/questa/work test/questa/transcript test/questa/etch*
 
-clean: clean-verilator clean-questa
+clean: clean-questa
 	rm -rf gen/verilog

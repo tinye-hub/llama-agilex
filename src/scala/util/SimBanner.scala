@@ -4,9 +4,8 @@ import java.io.FileOutputStream
 import java.nio.charset.StandardCharsets
 
 /**
- * Colored PASS/FAIL for Scala code paths (optional).
- *
- * For `make verilator`, use `scripts/sbt-runmain.sh` — see doc/simulation-conventions.md.
+ * Colored PASS/FAIL for optional Scala-side banners.
+ * Questa TB prints PASS/FAIL in SystemVerilog — see doc/simulation-conventions.md.
  */
 object SimBanner {
   private val Green = "\u001b[32m"

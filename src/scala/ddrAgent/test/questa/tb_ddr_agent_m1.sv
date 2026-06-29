@@ -282,8 +282,11 @@ module tb_ddr_agent_m1;
                 tick();
                 timeout++;
             end
+            while (io_memDone_valid) begin
+                tick();
+            end
             io_memDone_ready = 1'b0;
-            if (!io_memDone_valid)
+            if (timeout >= 500000)
                 $fatal(1, "timeout waiting MemDone sink=%0d", expected_sink);
             if (io_memDone_payload_sinkId != expected_sink[7:0])
                 $fatal(1, "MemDone sink %0d != %0d",

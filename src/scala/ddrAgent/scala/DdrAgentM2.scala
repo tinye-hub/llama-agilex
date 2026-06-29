@@ -169,27 +169,76 @@ class DdrAgentM2(axiCfg: Axi4Config = DdrAgentAxi.config()) extends Component {
   tuser := axisCtx
   tuser(15) := !isLast
 
-  io.embedOut.valid := streamValidRow && isEmbed
-  io.embedOut.payload.data := streamData
-  io.embedOut.payload.last := isLast
-  io.embedOut.payload.user := tuser.resized
+  val embedOutValid = RegInit(False)
+  val embedOutData  = Reg(Bits(16 bits))
+  val embedOutLast  = Reg(Bool())
+  val embedOutUser  = Reg(Bits(io.embedOut.payload.user.getWidth bits))
+  io.embedOut.valid := embedOutValid
+  io.embedOut.payload.data := embedOutData
+  io.embedOut.payload.last := embedOutLast
+  io.embedOut.payload.user := embedOutUser
   if (axisCfg.useKeep) io.embedOut.payload.keep := (1 << axisCfg.dataWidth / 8) - 1
 
-  io.gammaOut.valid := streamValidRow && isGamma
-  io.gammaOut.payload.data := streamData
-  io.gammaOut.payload.last := isLast
-  io.gammaOut.payload.user := tuser.resized
+  val embedInValid   = streamValidRow && isEmbed
+  val embedOutFire   = embedOutValid && io.embedOut.ready
+  val embedOutReadyR = RegNext(io.embedOut.ready, True)
+  val embedStageFire = embedInValid && (!embedOutValid || embedOutReadyR)
+  when(embedStageFire) {
+    embedOutValid := True
+    embedOutData  := streamData
+    embedOutLast  := isLast
+    embedOutUser  := tuser.resized
+  }.elsewhen(embedOutFire) {
+    embedOutValid := False
+  }
+
+  val gammaOutValid = RegInit(False)
+  val gammaOutData  = Reg(Bits(16 bits))
+  val gammaOutLast  = Reg(Bool())
+  val gammaOutUser  = Reg(Bits(io.gammaOut.payload.user.getWidth bits))
+  io.gammaOut.valid := gammaOutValid
+  io.gammaOut.payload.data := gammaOutData
+  io.gammaOut.payload.last := gammaOutLast
+  io.gammaOut.payload.user := gammaOutUser
   if (axisCfg.useKeep) io.gammaOut.payload.keep := (1 << axisCfg.dataWidth / 8) - 1
 
-  io.scaleOut.valid   := streamValidRow && isScale
-  io.scaleOut.payload := streamData
+  val gammaInValid   = streamValidRow && isGamma
+  val gammaOutFire   = gammaOutValid && io.gammaOut.ready
+  val gammaOutReadyR = RegNext(io.gammaOut.ready, True)
+  val gammaStageFire = gammaInValid && (!gammaOutValid || gammaOutReadyR)
+  when(gammaStageFire) {
+    gammaOutValid := True
+    gammaOutData  := streamData
+    gammaOutLast  := isLast
+    gammaOutUser  := tuser.resized
+  }.elsewhen(gammaOutFire) {
+    gammaOutValid := False
+  }
+
+  val scaleOutValid = RegInit(False)
+  val scaleOutData  = Reg(Bits(16 bits))
+  io.scaleOut.valid := scaleOutValid
+  io.scaleOut.payload := scaleOutData
+
+  val scaleInValid   = streamValidRow && isScale
+  val scaleOutFire   = scaleOutValid && io.scaleOut.ready
+  val scaleOutReadyR = RegNext(io.scaleOut.ready, True)
+  val scaleStageFire = scaleInValid && (!scaleOutValid || scaleOutReadyR)
+  when(scaleStageFire) {
+    scaleOutValid := True
+    scaleOutData  := streamData
+  }.elsewhen(scaleOutFire) {
+    scaleOutValid := False
+  }
+
+  val rowPipeBusy = embedOutValid || gammaOutValid || scaleOutValid
 
   val gemvValid = state === State.STREAM && isGemv
 
   io.weightBeat.valid   := gemvValid
   io.weightBeat.payload := beatWord
 
-  val streamFireRow  = io.embedOut.fire || io.gammaOut.fire || io.scaleOut.fire
+  val streamFireRow  = embedStageFire || gammaStageFire || scaleStageFire
   val streamFireGemv = io.weightBeat.fire
 
   when(state === State.STREAM) {
@@ -210,7 +259,7 @@ class DdrAgentM2(axiCfg: Axi4Config = DdrAgentAxi.config()) extends Component {
   io.memDone.payload.sinkId := sinkId
 
   when(state === State.DONE) {
-    io.memDone.valid := True
+    io.memDone.valid := !rowPipeBusy
   }
 }
 
