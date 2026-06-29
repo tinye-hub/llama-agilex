@@ -166,6 +166,35 @@ object DdrMemoryMap {
   def wO(layer: Int): Long = attnLayerBase(layer) + attnWOOffset
 
   // ---------------------------------------------------------------------------
+  // INT4 scale metadata (META_ATTN_SCALE_BASE)
+  // ---------------------------------------------------------------------------
+
+  /** FP16 scales per row for K=2048, group_size=128. */
+  val int4GroupsPerRowK2048: Int = vectorDim / 128
+
+  /** Bytes of one layer's attention scale table (W_Q + W_K + W_V + W_O). */
+  val attnScaleBytesPerLayer: Long = 81920L * fp16Bytes
+
+  /** Byte offset of W_Q scale sub-table for `layer` within `metaAttnScaleBase`. */
+  def attnWqScaleBase(layer: Int): Long = {
+    require(isValidLayer(layer), s"layer out of range: $layer")
+    metaAttnScaleBase + layer.toLong * attnScaleBytesPerLayer
+  }
+
+  def attnWkScaleBase(layer: Int): Long =
+    attnWqScaleBase(layer) + vectorDim.toLong * int4GroupsPerRowK2048 * fp16Bytes
+
+  def attnWvScaleBase(layer: Int): Long =
+    attnWkScaleBase(layer) + (vectorDim / 4).toLong * int4GroupsPerRowK2048 * fp16Bytes
+
+  def attnWoScaleBase(layer: Int): Long =
+    attnWvScaleBase(layer) + (vectorDim / 4).toLong * int4GroupsPerRowK2048 * fp16Bytes
+
+  /** Total FP16 scale bytes for one GEMV Job (M rows × groups_per_row × 2). */
+  def gemvScaleBytes(mRows: Int, groupsPerRow: Int = int4GroupsPerRowK2048): Long =
+    mRows.toLong * groupsPerRow.toLong * fp16Bytes
+
+  // ---------------------------------------------------------------------------
   // FFN weights
   // ---------------------------------------------------------------------------
 
@@ -217,6 +246,8 @@ object DdrMemoryMap {
     assert(attnLayerBase(0) == attnBase)
     assert(attnLayerBase(15) == attnBase + 15L * attnLayerStride)
     assert(wQ(0) == 0x20000000L)
+    assert(attnWqScaleBase(0) == metaAttnScaleBase)
+    assert(gemvScaleBytes(vectorDim) == 65536L)
     assert(ffnLayerBase(0) == ffnBase)
     assert(gateProj(3) == ffnBase + 3L * ffnLayerStride)
     assert(kvTokenBase(0, 0) == kvBase)

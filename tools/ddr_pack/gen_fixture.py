@@ -6,6 +6,7 @@ Writes known FP16 patterns at:
   token 0 embed @ 0x0000_0000
   token 1 embed @ 0x0000_1000
   L0 norm1 gamma @ 0x1F50_0000
+  W_Q(0) INT4 tiles @ 0x2000_0000 (4 × 32 B, for DdrAgent M2a GEMV_WEIGHT)
 """
 
 from __future__ import annotations
@@ -17,7 +18,10 @@ from pathlib import Path
 import numpy as np
 
 from ddr_image import DdrImage
-from ddr_memory_map import VECTOR_DIM, emb_row_base, gamma_addr, sanity_check
+from ddr_memory_map import NORM_NORM1, VECTOR_DIM, emb_row_base, gamma_addr, sanity_check, w_q
+
+TILE_BYTES = 32
+M2A_TILE_COUNT = 4
 from fp16_codec import f32_to_fp16_bytes
 from metadata import write_global_header
 
@@ -33,7 +37,12 @@ def gen_fixture(output: Path) -> None:
 
     image.write(emb_row_base(0), _fp16_pattern(0.0))
     image.write(emb_row_base(1), _fp16_pattern(1.0))
-    image.write(gamma_addr(0, 0), f32_to_fp16_bytes(np.ones(VECTOR_DIM, dtype=np.float32)))
+    image.write(gamma_addr(0, NORM_NORM1), f32_to_fp16_bytes(np.ones(VECTOR_DIM, dtype=np.float32)))
+
+    wq_base = w_q(0)
+    for tile_idx in range(M2A_TILE_COUNT):
+        payload = bytes(((tile_idx * TILE_BYTES + i) & 0xFF) for i in range(TILE_BYTES))
+        image.write(wq_base + tile_idx * TILE_BYTES, payload)
 
     write_global_header(image, attn_scale_bytes=0, ffn_scale_bytes=0, ffn_scale_offset=0)
     image.save(output)
@@ -41,7 +50,7 @@ def gen_fixture(output: Path) -> None:
     # Also emit a tiny 16 KiB slice for quick sim preload
     slice_path = output.with_suffix(".slice.bin")
     slice_path.write_bytes(image.read(0, 0x2000) + image.read(0x1F50_0000, 0x1000))
-    print(f"fixture: {output} (1 GiB sparse zeros + 3 regions)")
+    print(f"fixture: {output} (1 GiB sparse zeros + embed/gamma + {M2A_TILE_COUNT} W_Q tiles)")
     print(f"slice:   {slice_path} (12 KiB: embed0 + embed1 + gamma)")
 
 

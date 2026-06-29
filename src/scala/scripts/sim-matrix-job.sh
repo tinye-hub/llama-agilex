@@ -25,6 +25,8 @@ export PATH="$SCALA_ROOT/scripts:$PATH"
 export VERILATOR_REAL_MAKE=/usr/bin/make
 export DDR_IMAGE="${DDR_IMAGE:-$REPO_ROOT/tools/ddr_pack/out/ddr_image_m1.bin}"
 export DDR_AGENT_AXI_WIDTH="${DDR_AGENT_AXI_WIDTH:-256}"
+export LLAMA_M2A_DIM="${LLAMA_M2A_DIM:-2048}"
+export LLAMA_M2A_M="${LLAMA_M2A_M:-4}"
 export NC_RUN=
 export NC_RUN_GUI=
 

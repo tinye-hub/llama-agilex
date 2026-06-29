@@ -28,6 +28,7 @@ class DdrAgentM1(axiCfg: Axi4Config = DdrAgentAxi.config()) extends Component {
   val rowBytes  = DdrMemoryMap.rowBytes.toInt
   val beatCount = DdrMemoryMap.vectorDim
   val beatBytes = DdrAgentAxi.dataBytesOf(axiConfig)
+  val beatBytesW = log2Up(beatBytes)
   val burstBytes = DdrAgentAxi.burstBytes
   val burstBeats = DdrAgentAxi.burstBeatsOf(axiConfig)
 
@@ -53,9 +54,9 @@ class DdrAgentM1(axiCfg: Axi4Config = DdrAgentAxi.config()) extends Component {
 
   val bytesRead  = Reg(UInt(16 bits)) init (0)
   val burstAddr  = Reg(UInt(32 bits))
-  val streamBeat = Reg(UInt(11 bits)) init (0)
+  val outBeat    = Reg(UInt(11 bits)) init (0)
 
-  val rowMem = Vec(Reg(Bits(8 bits)) init (0), rowBytes)
+  val rowBuf = new DdrAgentRowMem(beatBytes, rowBytes)
 
   val cmdPop = cmdFifo.io.pop
   cmdPop.ready := False
@@ -87,7 +88,7 @@ class DdrAgentM1(axiCfg: Axi4Config = DdrAgentAxi.config()) extends Component {
         axisCtx  := cmdPop.payload.axisCtx
         bytesRead := 0
         burstAddr := cmdPop.payload.ddrAddr
-        streamBeat := 0
+        outBeat := 0
         state := State.AXI_AR
       }
     }
@@ -106,11 +107,12 @@ class DdrAgentM1(axiCfg: Axi4Config = DdrAgentAxi.config()) extends Component {
 
     is(State.AXI_R) {
       io.axi.r.ready := True
+      rowBuf.writeBeat(
+        beatIdx = (bytesRead >> beatBytesW).resize(rowBuf.addrW),
+        data    = io.axi.r.payload.data,
+        enable  = io.axi.r.fire
+      )
       when(io.axi.r.fire) {
-        val base = bytesRead
-        for (i <- 0 until beatBytes) {
-          rowMem((base + U(i, base.getWidth bits)).resized) := io.axi.r.payload.data(i * 8 + 7 downto i * 8)
-        }
         val nextBytes = bytesRead + U(beatBytes, bytesRead.getWidth bits)
         bytesRead := nextBytes
 
@@ -136,19 +138,21 @@ class DdrAgentM1(axiCfg: Axi4Config = DdrAgentAxi.config()) extends Component {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Row → AXI-Stream (2048 × FP16, little-endian)
-  // ---------------------------------------------------------------------------
-  val memReadAddr = streamBeat
-  val byteLo = rowMem((memReadAddr << 1).resized)
-  val byteHi = rowMem(((memReadAddr << 1) + U(1, memReadAddr.getWidth bits)).resized)
+  when(state === State.IDLE) {
+    outBeat := 0
+  }
+
+  val beatIdx    = rowBuf.beatIndexForStreamBeat(outBeat)
+  val beatWord   = rowBuf.readBeat(beatIdx)
+
+  val streamValid = state === State.STREAM
+
+  val streamData = rowBuf.fp16AtStreamBeat(beatWord, outBeat)
 
   val isEmbed = sinkId === U(DdrSinkId.embedRow, 8 bits)
   val isGamma = sinkId === U(DdrSinkId.rmsGamma, 8 bits)
-  val isLast  = streamBeat === U(beatCount - 1, streamBeat.getWidth bits)
-
-  val streamValid = state === State.STREAM
-  val streamData  = byteHi ## byteLo
+  val isLast  = outBeat === U(beatCount - 1, outBeat.getWidth bits)
 
   val tuser = Bits(16 bits)
   tuser := axisCtx
@@ -168,11 +172,11 @@ class DdrAgentM1(axiCfg: Axi4Config = DdrAgentAxi.config()) extends Component {
 
   val streamFire = (io.embedOut.fire || io.gammaOut.fire)
 
-  when(state === State.STREAM && streamFire) {
+  when(state === State.STREAM && streamValid && streamFire) {
     when(isLast) {
       state := State.DONE
     } otherwise {
-      streamBeat := streamBeat + 1
+      outBeat := outBeat + 1
     }
   }
 

@@ -82,11 +82,11 @@ object LlamaM1TopSim extends App {
 
   val g = LlamaM1Generics(dim = dim, useSimIp = true, axiDataWidth = 64)
 
+  val simBase = SimConfig
+    .workspacePath("top/gen/sim/LlamaM1Top")
+    .withConfig(SpinalConfig(targetDirectory = "top/gen/sim/hw"))
   val cfg = VerilatorSimCompat.withWDataCompat(
-    SimConfig
-      .withWave
-      .workspacePath("top/gen/sim/LlamaM1Top")
-      .withConfig(SpinalConfig(targetDirectory = "top/gen/sim/hw"))
+    if (sys.env.getOrElse("VERILATOR_WAVE", "0") == "1") simBase.withWave else simBase
   ).compile(LlamaM1Top(g))
 
   cfg.doSim { dut =>

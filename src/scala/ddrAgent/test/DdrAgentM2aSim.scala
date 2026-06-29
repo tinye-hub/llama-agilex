@@ -4,26 +4,28 @@ import ddrMemoryMap.DdrMemoryMap
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib.bus.amba4.axi.sim.{AxiMemorySim, AxiMemorySimConfig}
-import rmsNorm.Fp16Sim
+import gemvService64.GemvGenerics
 import util.VerilatorSimCompat
 
 import scala.collection.mutable
 import scala.language.postfixOps
 
 /**
- * Verilator sim: [[DdrAgentM1]] + file-backed AXI4 DDR slave.
+ * Verilator sim: [[DdrAgentM2]] — M1 row sinks + GEMV_WEIGHT 32 B tile reads.
  *
- * Preload: `tools/ddr_pack/out/ddr_image_m1.bin` (or `DDR_IMAGE` env).
- * Run: `make verilator` (colored PASS via scripts/sbt-runmain.sh).
- * Questa bit-exact check: `make questa`.
+ * Preload: `tools/ddr_pack/out/ddr_fixture.bin` (or `DDR_IMAGE` env).
+ * Run: `make verilator-m2a`
  */
-object DdrAgentM1Sim extends App {
+object DdrAgentM2aSim extends App {
+
+  val tileBytes = GemvGenerics().tileByteStride
+  val axiWidth  = 256
 
   def pushMemCmd(
-      dut: DdrAgentM1,
+      dut: DdrAgentM2,
       sinkId: Int,
       ddrAddr: Long,
-      byteLen: Long = DdrMemoryMap.rowBytes,
+      byteLen: Long,
       tag: Int = 0,
       axisCtx: Int = 0
   ): Unit = {
@@ -40,7 +42,7 @@ object DdrAgentM1Sim extends App {
   }
 
   def drainAxis(
-      dut: DdrAgentM1,
+      dut: DdrAgentM2,
       which: String,
       expectedBeats: Int
   ): Array[Int] = {
@@ -78,7 +80,25 @@ object DdrAgentM1Sim extends App {
     out.toArray
   }
 
-  def awaitMemDone(dut: DdrAgentM1, expectedSink: Int): Unit = {
+  def drainWeightBeat(dut: DdrAgentM2): BigInt = {
+    dut.io.weightBeat.ready #= true
+    var got = false
+    var timeout = 0
+    var beat = BigInt(0)
+    while (!got && timeout < 50000) {
+      dut.clockDomain.waitSampling()
+      timeout += 1
+      if (dut.io.weightBeat.valid.toBoolean && dut.io.weightBeat.ready.toBoolean) {
+        beat = dut.io.weightBeat.payload.toBigInt
+        got = true
+      }
+    }
+    dut.io.weightBeat.ready #= false
+    assert(got, s"timeout waiting weightBeat (timeout=$timeout)")
+    beat
+  }
+
+  def awaitMemDone(dut: DdrAgentM2, expectedSink: Int): Unit = {
     var got = false
     var timeout = 0
     dut.io.memDone.ready #= true
@@ -102,20 +122,19 @@ object DdrAgentM1Sim extends App {
   val goldenGamma = SimDdrImage.rowFp16Bits(image, DdrMemoryMap.gammaAddr(0, DdrMemoryMap.NormKind.norm1), dim)
 
   val simBase = SimConfig
-    .workspacePath("ddrAgent/gen/sim/DdrAgentM1")
+    .workspacePath("ddrAgent/gen/sim/DdrAgentM2")
     .withConfig(SpinalConfig(targetDirectory = "ddrAgent/gen/sim/hw"))
   val cfg = VerilatorSimCompat.withWDataCompat(
     if (sys.env.getOrElse("VERILATOR_WAVE", "0") == "1") simBase.withWave else simBase
-  ).compile(DdrAgentM1(axiCfg = DdrAgentAxi.config(dataWidth = 64)))
+  ).compile(DdrAgentM2(axiCfg = DdrAgentAxi.config(dataWidth = axiWidth)))
 
   val rowBytes  = DdrMemoryMap.rowBytes.toInt
   val embedAddr = DdrMemoryMap.embRowBase(0)
   val gammaAddr = DdrMemoryMap.gammaAddr(0, DdrMemoryMap.NormKind.norm1)
+  val wqBase    = DdrMemoryMap.wQ(0)
+  val tileCount = 4
 
   cfg.doSim { dut =>
-    // Initialize ALL DUT inputs before the clock runs. Otherwise Verilator drives
-    // memCmd.valid with a random value at t=0, the cmd FIFO latches a garbage command,
-    // and the DUT issues an AXI read to a bogus address (root cause of the flaky sim).
     dut.io.memCmd.valid #= false
     dut.io.memCmd.payload.cmdType #= MemCmdType.read
     dut.io.memCmd.payload.sinkId #= 0
@@ -125,47 +144,55 @@ object DdrAgentM1Sim extends App {
     dut.io.memCmd.payload.axisCtx #= 0
     dut.io.embedOut.ready #= false
     dut.io.gammaOut.ready #= false
-    dut.io.memDone.ready  #= false
+    dut.io.weightBeat.ready #= false
+    dut.io.memDone.ready #= false
 
     dut.clockDomain.forkStimulus(10)
 
-    // Official SpinalHDL AXI4 read slave model (deterministic, no hand-rolled fork race).
     val mem = AxiMemorySim(dut.io.axi, dut.clockDomain, AxiMemorySimConfig())
     mem.start()
     mem.memory.writeArray(embedAddr, image.slice(embedAddr.toInt, embedAddr.toInt + rowBytes))
     mem.memory.writeArray(gammaAddr, image.slice(gammaAddr.toInt, gammaAddr.toInt + rowBytes))
+    mem.memory.writeArray(wqBase, image.slice(wqBase.toInt, wqBase.toInt + tileCount * tileBytes))
 
     dut.io.embedOut.ready #= true
     dut.io.gammaOut.ready #= true
 
     dut.clockDomain.waitSampling(10)
 
-    pushMemCmd(dut, DdrSinkId.embedRow, embedAddr, tag = 1, axisCtx = 0x0001)
+    pushMemCmd(dut, DdrSinkId.embedRow, embedAddr, rowBytes, tag = 1, axisCtx = 0x0001)
     val recvEmbed = drainAxis(dut, "embed", dim)
     awaitMemDone(dut, DdrSinkId.embedRow)
 
-    pushMemCmd(dut, DdrSinkId.rmsGamma, gammaAddr, tag = 2)
+    pushMemCmd(dut, DdrSinkId.rmsGamma, gammaAddr, rowBytes, tag = 2)
     val recvGamma = drainAxis(dut, "gamma", dim)
     awaitMemDone(dut, DdrSinkId.rmsGamma)
 
+    var t = 0
+    while (t < tileCount) {
+      val addr = wqBase + t * tileBytes
+      val golden = SimDdrImage.packAxiBeat(SimDdrImage.readBytes(image, addr, tileBytes), axiWidth)
+      pushMemCmd(dut, DdrSinkId.gemvWeight, addr, tileBytes, tag = 10 + t)
+      val got = drainWeightBeat(dut)
+      awaitMemDone(dut, DdrSinkId.gemvWeight)
+      assert(got == golden, f"tile $t @ 0x${addr}%x: got 0x${got.toString(16)} != golden 0x${golden.toString(16)}")
+      t += 1
+    }
+
     def check(got: Array[Int], golden: Array[Int], name: String): Unit = {
       var mism = 0
-      var maxErr = 0.0f
       var j = 0
       while (j < dim) {
-        val g = Fp16Sim.bitsToFloat(golden(j))
-        val r = Fp16Sim.bitsToFloat(got(j))
-        val err = math.abs(r - g)
-        if (err > maxErr) maxErr = err
         if (got(j) != golden(j)) mism += 1
         j += 1
       }
-      println(f"DdrAgentM1Sim $name: mismatches=$mism/$dim maxFpErr=$maxErr%.6f")
+      println(f"DdrAgentM2aSim $name: mismatches=$mism/$dim")
       assert(mism == 0, s"$name: $mism FP16 bit mismatches vs DDR image")
     }
 
     check(recvEmbed, goldenEmbed, "embed")
     check(recvGamma, goldenGamma, "gamma")
+    println(f"DdrAgentM2aSim gemv tiles: $tileCount/$tileCount OK")
 
     simSuccess()
   }

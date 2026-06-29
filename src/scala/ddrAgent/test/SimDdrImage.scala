@@ -32,6 +32,25 @@ object SimDdrImage {
     bytes
   }
 
+  /** Read `len` bytes from DDR image (for GEMV INT4 tile golden). */
+  def readBytes(image: Array[Byte], byteAddr: Long, len: Int): Array[Byte] = {
+    val base = byteAddr.toInt
+    require(base >= 0 && base + len <= image.length, s"byte read OOB @ 0x${byteAddr.toHexString}")
+    java.util.Arrays.copyOfRange(image, base, base + len)
+  }
+
+  /** Pack little-endian bytes into a 256-bit beat (byte0 = LSB). */
+  def packAxiBeat(bytes: Array[Byte], dataWidth: Int = 256): BigInt = {
+    require(bytes.length <= dataWidth / 8)
+    var acc = BigInt(0)
+    var i = 0
+    while (i < bytes.length) {
+      acc |= BigInt(bytes(i) & 0xff) << (8 * i)
+      i += 1
+    }
+    acc
+  }
+
   def rowFp16Bits(image: Array[Byte], byteAddr: Long, dim: Int = 2048): Array[Int] = {
     val base = byteAddr.toInt
     require(base >= 0 && base + dim * 2 <= image.length, s"row read OOB @ 0x${byteAddr.toHexString}")

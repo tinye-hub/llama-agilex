@@ -3,11 +3,14 @@
 #   make verilog          Spinal -> gen/verilog/GemvService64.v  (K/M default 2048)
 #   make verilator        Verilator smoke (control-flow; FP golden -> questa)
 #   make questa           Questa + real Quartus FP IPs (K/M overridable)
+#   make quartus          Quartus syn+fit+sta on GemvService64 (no bitstream)
 #
 # See doc/gemv-m2a-design.md (§14 phases a1-a4, §15 verification).
 
 SCALA_ROOT  := $(abspath ..)
 REPO_ROOT   := $(abspath ../../..)
+QUARTUS     ?= quartus_sh
+PROJECT     := gemv_service64
 # Llama 3.2 1B W_Q: K = vectorDim, M = output rows (both 2048 by default).
 K           ?= 2048
 M           ?= 2048
@@ -32,7 +35,8 @@ endif
 
 .PHONY: all help verilog verilog-mac verilator verilator-mac verilator-service \
 	questa questa-run questa-view questa-mac questa-service questa-compile \
-	clean clean-verilator clean-questa
+	quartus quartus-report quartus-all \
+	clean clean-verilator clean-questa clean-quartus
 
 all: verilog
 
@@ -50,6 +54,8 @@ help:
 	@echo "  questa-mac       a1 GemvMacBeat FP golden"
 	@echo "  questa-service   alias for questa"
 	@echo "  questa-compile   Questa compile only (IP + DUT + TB)"
+	@echo "  quartus          verilog + Quartus syn+fit+sta (K=$(K) M=$(M), no .sof/.rbf)"
+	@echo "  quartus-report   fit + STA summary table"
 	@echo ""
 	@echo "  NC_RUN:     $(if $(NC_RUN),$(NC_RUN),(empty — local run))"
 	@echo "  NC_RUN_GUI: $(if $(NC_RUN_GUI),$(NC_RUN_GUI),(empty — local run))"
@@ -101,11 +107,46 @@ questa-mac: verilog-mac
 questa-compile: verilog-mac
 	cd $(QUESTA_DIR) && $(NC_RUN) ./run.sh compile
 
+quartus: verilog
+	cd quartus && $(NC_RUN) $(QUARTUS) -t scripts/synth_fit_sta.tcl
+
+quartus-report:
+	@FIT=quartus/output_files/$(PROJECT).fit.summary; \
+	STA=quartus/output_files/$(PROJECT).sta.summary; \
+	test -f "$$FIT" || { echo "Missing $$FIT — run: make quartus"; exit 1; }; \
+	test -f "$$STA" || { echo "Missing $$STA — run: make quartus"; exit 1; }; \
+	alm=$$(grep '^Logic utilization' "$$FIT" | sed 's/^[^:]*: //'); \
+	bram=$$(grep '^Total block memory bits' "$$FIT" | sed 's/^[^:]*: //'); \
+	ram=$$(grep '^Total RAM Blocks' "$$FIT" | sed 's/^[^:]*: //'); \
+	dsp=$$(grep '^Total DSP Blocks' "$$FIT" | sed 's/^[^:]*: //'); \
+	setup=$$(awk '/^Type  : Setup/{f=1} f&&/^TNS/{print $$3; exit}' "$$STA"); \
+	hold=$$(awk '/^Type  : Hold/{f=1} f&&/^TNS/{print $$3; exit}' "$$STA"); \
+	mpw=$$(awk '/^Type  : Minimum Pulse Width/{f=1} f&&/^TNS/{print $$3; exit}' "$$STA"); \
+	printf '\n$(PROJECT)  K=$(K) M=$(M)\n\n'; \
+	printf '| %-22s | %-36s |\n' 'Metric' 'Value'; \
+	printf '|%-24s|%-38s|\n' '------------------------' '--------------------------------------'; \
+	printf '| %-22s | %-36s |\n' 'Logic (ALMs)' "$$alm"; \
+	printf '| %-22s | %-36s |\n' 'Block memory bits' "$$bram"; \
+	printf '| %-22s | %-36s |\n' 'RAM blocks' "$$ram"; \
+	printf '| %-22s | %-36s |\n' 'DSP blocks' "$$dsp"; \
+	printf '| %-22s | %-36s |\n' 'Setup TNS' "$$setup"; \
+	printf '| %-22s | %-36s |\n' 'Hold TNS' "$$hold"; \
+	printf '| %-22s | %-36s |\n' 'Min pulse width TNS' "$$mpw"; \
+	printf '\n'
+
+quartus-all: quartus quartus-report
+
 clean-questa:
 	rm -rf $(QUESTA_DIR)/work $(QUESTA_DIR)/transcript $(QUESTA_DIR)/*.wlf
 
 clean-verilator:
 	rm -rf gen/sim
 
-clean: clean-verilator clean-questa
+clean-quartus:
+	rm -rf quartus/db quartus/incremental_db quartus/output_files quartus/.qws \
+	       quartus/*.qws quartus/cdb quartus/serv_req_info.txt \
+	       quartus/qdb quartus/dni quartus/default.qsf quartus/default.*.rpt \
+	       quartus/*.qsf.backup quartus/tmp-clearbox
+
+clean: clean-verilator clean-questa clean-quartus
 	rm -rf gen/verilog

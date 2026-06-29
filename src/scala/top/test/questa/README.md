@@ -1,6 +1,20 @@
-# LlamaM1Top Questa simulation
+# Llama Top Questa simulation
+
+## M1 — `LlamaM1Top`
 
 M1 毕业考试：`LlamaM1Top` 端到端仿真，含真实 Quartus Agilex 5 浮点 IP（`altera_fp_functions` + `agilex_native_floating_point_dsp`），数值精度可验证。
+
+## M2a — `LlamaM2aTop`
+
+M2a 毕业考试：M1 路径 + L0 `W_Q` GEMV（`GemvService64` + `DdrAgentM2` tile/scale 读）。
+
+```bash
+make -C tools/ddr_pack pack          # ddr_image.bin（含 INT4 W_Q + scales）
+cd src/scala/top && make questa-m2a  # 默认 K=M=2048
+make questa-m2a M=4                  # smoke：4 行输出，全 K
+```
+
+---
 
 仿真命名与 `WAVE`/`VIEW` 约定见 [simulation-conventions.md](../../../doc/simulation-conventions.md)。
 
@@ -31,8 +45,9 @@ Simlib 必须在 `simlib/quartus2025_1_1_agilex5_questa2024_3/`（由 `quartus_s
 
 ```bash
 cd src/scala/top
-make questa              # NC_RUN 自动读取 set_env.sh
-make questa WAVE=1       # 录制 WLF
+make questa-m1           # M1 毕业（`make questa` 别名）
+make questa-m2a          # M2a 毕业
+make questa-m1 WAVE=1    # 录制 WLF
 make questa VIEW=1       # Questa GUI 打开波形（需 DISPLAY）
 make questa NC_RUN=      # 本地 Questa license
 make verilator           # 控制流 only（彩色 PASS 见 sbt-runmain.sh）

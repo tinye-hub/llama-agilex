@@ -1,9 +1,9 @@
-// Questa testbench for DdrAgentM1 — mirrors ddrAgent.DdrAgentM1Sim (Verilator).
-// Golden vectors: ddr_image_m1.bin @ fixed DDR row addresses.
+// Questa testbench for DdrAgentM2 — M1 row sinks + GEMV_WEIGHT 32 B tile reads.
+// Golden: ddr_fixture.bin (embed/gamma rows + W_Q(0) INT4 tiles).
 
 `timescale 1ns/1ps
 
-module tb_ddr_agent_m1;
+module tb_ddr_agent_m2a;
 
 `ifdef DDR_AGENT_AXI_WIDTH
     localparam int AXI_DATA_W = `DDR_AGENT_AXI_WIDTH;
@@ -13,10 +13,14 @@ module tb_ddr_agent_m1;
 
     localparam int DIM           = 2048;
     localparam int ROW_BYTES     = 4096;
+    localparam int TILE_BYTES    = 32;
+    localparam int TILE_COUNT    = 4;
     localparam longint EMBED_ADDR = 64'h0000_0000;
     localparam longint GAMMA_ADDR = 64'h1F50_0000;
+    localparam longint WQ_BASE    = 64'h2000_0000;
     localparam int SINK_EMBED    = 0;
     localparam int SINK_GAMMA    = 1;
+    localparam int SINK_GEMV     = 2;
     localparam int CMD_READ      = 0;
     localparam int CLK_PERIOD_NS = 10;
     localparam int MAX_DRAIN     = DIM * 200;
@@ -24,7 +28,6 @@ module tb_ddr_agent_m1;
     logic clk;
     logic reset;
 
-    // MemCmd / MemDone
     logic        io_memCmd_valid;
     logic        io_memCmd_ready;
     logic [7:0]  io_memCmd_payload_cmdType;
@@ -40,7 +43,6 @@ module tb_ddr_agent_m1;
     logic [7:0]  io_memDone_payload_error;
     logic [7:0]  io_memDone_payload_sinkId;
 
-    // embedOut / gammaOut (AXI-Stream)
     logic        io_embedOut_valid;
     logic        io_embedOut_ready;
     logic [15:0] io_embedOut_payload_data;
@@ -55,7 +57,10 @@ module tb_ddr_agent_m1;
     logic        io_gammaOut_payload_last;
     logic [31:0] io_gammaOut_payload_user;
 
-    // AXI4 master (DUT) → read slave (memory model)
+    logic                   io_weightBeat_valid;
+    logic                   io_weightBeat_ready;
+    logic [AXI_DATA_W-1:0]  io_weightBeat_payload;
+
     logic                   io_axi_aw_valid;
     logic                   io_axi_aw_ready;
     logic [31:0]            io_axi_aw_payload_addr;
@@ -94,8 +99,10 @@ module tb_ddr_agent_m1;
     bit [15:0] golden_gamma [DIM];
     bit [15:0] recv_embed  [DIM];
     bit [15:0] recv_gamma  [DIM];
+    bit [AXI_DATA_W-1:0] golden_tiles [TILE_COUNT];
+    bit [AXI_DATA_W-1:0] recv_tile;
 
-    DdrAgentM1 dut (
+    DdrAgentM2 dut (
         .io_memCmd_valid               (io_memCmd_valid),
         .io_memCmd_ready               (io_memCmd_ready),
         .io_memCmd_payload_cmdType     (io_memCmd_payload_cmdType),
@@ -121,6 +128,9 @@ module tb_ddr_agent_m1;
         .io_gammaOut_payload_keep      (io_gammaOut_payload_keep),
         .io_gammaOut_payload_last      (io_gammaOut_payload_last),
         .io_gammaOut_payload_user      (io_gammaOut_payload_user),
+        .io_weightBeat_valid           (io_weightBeat_valid),
+        .io_weightBeat_ready           (io_weightBeat_ready),
+        .io_weightBeat_payload         (io_weightBeat_payload),
         .io_axi_aw_valid               (io_axi_aw_valid),
         .io_axi_aw_ready               (io_axi_aw_ready),
         .io_axi_aw_payload_addr        (io_axi_aw_payload_addr),
@@ -135,7 +145,7 @@ module tb_ddr_agent_m1;
         .io_axi_b_valid                (io_axi_b_valid),
         .io_axi_b_ready                (io_axi_b_ready),
         .io_axi_b_payload_id           (io_axi_b_payload_id),
-        .io_axi_b_payload_resp       (io_axi_b_payload_resp),
+        .io_axi_b_payload_resp         (io_axi_b_payload_resp),
         .io_axi_ar_valid               (io_axi_ar_valid),
         .io_axi_ar_ready               (io_axi_ar_ready),
         .io_axi_ar_payload_addr        (io_axi_ar_payload_addr),
@@ -147,8 +157,8 @@ module tb_ddr_agent_m1;
         .io_axi_r_ready                (io_axi_r_ready),
         .io_axi_r_payload_data         (io_axi_r_payload_data),
         .io_axi_r_payload_id           (io_axi_r_payload_id),
-        .io_axi_r_payload_resp       (io_axi_r_payload_resp),
-        .io_axi_r_payload_last       (io_axi_r_payload_last),
+        .io_axi_r_payload_resp         (io_axi_r_payload_resp),
+        .io_axi_r_payload_last         (io_axi_r_payload_last),
         .clk                           (clk),
         .reset                         (reset)
     );
@@ -209,9 +219,32 @@ module tb_ddr_agent_m1;
         end
     endtask
 
+    task automatic load_tile_goldens(input string path);
+        int fd;
+        int t, b;
+        byte unsigned byte_val;
+        begin
+            fd = $fopen(path, "rb");
+            if (fd == 0)
+                $fatal(1, "Cannot open DDR image %s", path);
+            for (t = 0; t < TILE_COUNT; t++) begin
+                if ($fseek(fd, WQ_BASE + t * TILE_BYTES, 0) != 0)
+                    $fatal(1, "fseek tile %0d failed", t);
+                golden_tiles[t] = '0;
+                for (b = 0; b < TILE_BYTES; b++) begin
+                    if ($fread(byte_val, fd) != 1)
+                        $fatal(1, "short read tile %0d byte %0d", t, b);
+                    golden_tiles[t][8*b +: 8] = byte_val;
+                end
+            end
+            $fclose(fd);
+        end
+    endtask
+
     task automatic push_mem_cmd(
         input int sink_id,
         input longint unsigned ddr_addr,
+        input int byte_len,
         input int tag,
         input int axis_ctx
     );
@@ -219,7 +252,7 @@ module tb_ddr_agent_m1;
             io_memCmd_valid               = 1'b1;
             io_memCmd_payload_cmdType     = CMD_READ[7:0];
             io_memCmd_payload_sinkId      = sink_id[7:0];
-            io_memCmd_payload_byteLen     = ROW_BYTES;
+            io_memCmd_payload_byteLen     = byte_len[31:0];
             io_memCmd_payload_ddrAddr     = ddr_addr[31:0];
             io_memCmd_payload_tag         = tag[31:0];
             io_memCmd_payload_axisCtx     = axis_ctx[15:0];
@@ -265,11 +298,29 @@ module tb_ddr_agent_m1;
             else
                 io_gammaOut_ready = 1'b0;
 
-            if (beat_count != DIM) begin
-                dump_dut_status(is_embed ? "embed drain timeout" : "gamma drain timeout");
-                $fatal(1, "%s: expected %0d beats, got %0d (timeout=%0d)",
-                       is_embed ? "embed" : "gamma", DIM, beat_count, timeout);
+            if (beat_count != DIM)
+                $fatal(1, "%s: expected %0d beats, got %0d",
+                       is_embed ? "embed" : "gamma", DIM, beat_count);
+        end
+    endtask
+
+    task automatic drain_weight_beat(output bit [AXI_DATA_W-1:0] beat);
+        int timeout;
+        begin
+            io_weightBeat_ready = 1'b1;
+            timeout = 0;
+            beat = '0;
+            while (timeout < 50000) begin
+                tick();
+                timeout++;
+                if (io_weightBeat_valid && io_weightBeat_ready) begin
+                    beat = io_weightBeat_payload;
+                    break;
+                end
             end
+            io_weightBeat_ready = 1'b0;
+            if (timeout >= 50000)
+                $fatal(1, "timeout waiting weightBeat");
         end
     endtask
 
@@ -303,7 +354,7 @@ module tb_ddr_agent_m1;
             for (j = 0; j < DIM; j++)
                 if (got[j] !== golden[j])
                     mism++;
-            $display("tb_ddr_agent_m1 %s: mismatches=%0d/%0d", name, mism, DIM);
+            $display("tb_ddr_agent_m2a %s: mismatches=%0d/%0d", name, mism, DIM);
             if (mism != 0)
                 $fatal(1, "%s: %0d FP16 bit mismatches vs DDR image", name, mism);
             check_row = mism;
@@ -314,78 +365,13 @@ module tb_ddr_agent_m1;
     int n_gamma;
     int mism_embed;
     int mism_gamma;
-
-    // -------------------------------------------------------------------------
-    // Log-based debug (enable: +DDR_AGENT_DEBUG or auto-dump on failure)
-    // -------------------------------------------------------------------------
-    int sim_cycle;
-    int ar_fire_cnt;
-    int r_fire_cnt;
-
-    function automatic string state_name(input logic [2:0] st);
-        case (st)
-            3'd0: state_name = "IDLE";
-            3'd1: state_name = "AXI_AR";
-            3'd2: state_name = "AXI_R";
-            3'd3: state_name = "STREAM";
-            3'd4: state_name = "DONE";
-            default: state_name = "?";
-        endcase
-    endfunction
-
-    task automatic dump_dut_status(input string tag);
-        begin
-            $display("--- DUT status [%s] @%0t cycle=%0d ---", tag, $time, sim_cycle);
-            $display("  state=%s bytesRead=%0d outBeat=%0d sinkId=%0d",
-                     state_name(dut.state_1), dut.bytesRead, dut.outBeat, dut.sinkId);
-            $display("  memCmd: valid=%b ready=%b  memDone: valid=%b ready=%b",
-                     io_memCmd_valid, io_memCmd_ready, io_memDone_valid, io_memDone_ready);
-            $display("  AXI AR: valid=%b ready=%b addr=0x%0h len=%0d",
-                     io_axi_ar_valid, io_axi_ar_ready,
-                     io_axi_ar_payload_addr, io_axi_ar_payload_len);
-            $display("  AXI R:  valid=%b ready=%b last=%b  (fires: ar=%0d r=%0d)",
-                     io_axi_r_valid, io_axi_r_ready, io_axi_r_payload_last,
-                     ar_fire_cnt, r_fire_cnt);
-            $display("  embedOut: valid=%b ready=%b  gammaOut: valid=%b ready=%b",
-                     io_embedOut_valid, io_embedOut_ready,
-                     io_gammaOut_valid, io_gammaOut_ready);
-            $display("  cmdFifo pop_valid=%b pop_ready=%b occupancy=%0d",
-                     dut.cmdFifo_io_pop_valid, dut.cmdFifo_io_pop_ready,
-                     dut.cmdFifo_io_occupancy);
-        end
-    endtask
-
-    always @(posedge clk) begin
-        if (reset)
-            sim_cycle <= 0;
-        else
-            sim_cycle <= sim_cycle + 1;
-    end
-
-    always @(posedge clk) begin
-        if (!reset) begin
-            if (io_axi_ar_valid && io_axi_ar_ready) begin
-                ar_fire_cnt <= ar_fire_cnt + 1;
-                if ($test$plusargs("DDR_AGENT_DEBUG"))
-                    $display("TB: AR fire #%0d addr=0x%0h @%0t",
-                             ar_fire_cnt + 1, io_axi_ar_payload_addr, $time);
-            end
-            if (io_axi_r_valid && io_axi_r_ready) begin
-                r_fire_cnt <= r_fire_cnt + 1;
-                if ($test$plusargs("DDR_AGENT_DEBUG") &&
-                    (r_fire_cnt < 3 || io_axi_r_payload_last))
-                    $display("TB: R fire #%0d last=%b bytesRead=%0d state=%s @%0t",
-                             r_fire_cnt + 1, io_axi_r_payload_last,
-                             dut.bytesRead, state_name(dut.state_1), $time);
-            end
-        end
-    end
+    int tile_idx;
+    int tile_ok;
 
     initial begin
         if (!$value$plusargs("DDR_IMAGE=%s", ddr_image_path))
-            $fatal(1, "DDR_IMAGE plusarg missing — run via make questa or ./run.sh m1");
+            $fatal(1, "DDR_IMAGE plusarg missing — run via make questa-m2a or ./run.sh m2a");
 
-        // Drive all DUT inputs before reset release (same as DdrAgentM1Sim.scala).
         io_memCmd_valid           = 1'b0;
         io_memCmd_payload_cmdType = '0;
         io_memCmd_payload_sinkId  = '0;
@@ -395,35 +381,52 @@ module tb_ddr_agent_m1;
         io_memCmd_payload_axisCtx = '0;
         io_embedOut_ready         = 1'b0;
         io_gammaOut_ready         = 1'b0;
+        io_weightBeat_ready       = 1'b0;
         io_memDone_ready          = 1'b0;
 
         reset = 1'b1;
-        ar_fire_cnt = 0;
-        r_fire_cnt  = 0;
         repeat (5) tick();
         reset = 1'b0;
         repeat (10) tick();
 
         load_row_golden(ddr_image_path, EMBED_ADDR, golden_embed);
         load_row_golden(ddr_image_path, GAMMA_ADDR, golden_gamma);
+        load_tile_goldens(ddr_image_path);
         ddr_mem.load_region(ddr_image_path, EMBED_ADDR, ROW_BYTES);
         ddr_mem.load_region(ddr_image_path, GAMMA_ADDR, ROW_BYTES);
+        ddr_mem.load_region(ddr_image_path, WQ_BASE, TILE_COUNT * TILE_BYTES);
 
         io_embedOut_ready = 1'b1;
         io_gammaOut_ready = 1'b1;
 
-        push_mem_cmd(SINK_EMBED, EMBED_ADDR, 1, 16'h0001);
+        push_mem_cmd(SINK_EMBED, EMBED_ADDR, ROW_BYTES, 1, 16'h0001);
         drain_axis(1'b1, recv_embed, n_embed);
         await_mem_done(SINK_EMBED);
 
-        push_mem_cmd(SINK_GAMMA, GAMMA_ADDR, 2, 16'h0002);
+        push_mem_cmd(SINK_GAMMA, GAMMA_ADDR, ROW_BYTES, 2, 16'h0002);
         drain_axis(1'b0, recv_gamma, n_gamma);
         await_mem_done(SINK_GAMMA);
+
+        tile_ok = 0;
+        for (tile_idx = 0; tile_idx < TILE_COUNT; tile_idx++) begin
+            push_mem_cmd(SINK_GEMV, WQ_BASE + tile_idx * TILE_BYTES, TILE_BYTES,
+                         10 + tile_idx, 16'h0000);
+            drain_weight_beat(recv_tile);
+            await_mem_done(SINK_GEMV);
+            if (recv_tile !== golden_tiles[tile_idx]) begin
+                $display("tile %0d mismatch: got %0h expected %0h",
+                         tile_idx, recv_tile, golden_tiles[tile_idx]);
+                $fatal(1, "GEMV tile %0d mismatch", tile_idx);
+            end
+            tile_ok++;
+        end
+        $display("tb_ddr_agent_m2a gemv tiles: %0d/%0d OK", tile_ok, TILE_COUNT);
 
         mism_embed = check_row(recv_embed, golden_embed, "embed");
         mism_gamma = check_row(recv_gamma, golden_gamma, "gamma");
 
         $display("\033[32m********** PASS **********\033[0m");
+        #1;
         $finish;
     end
 

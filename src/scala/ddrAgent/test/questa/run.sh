@@ -1,15 +1,10 @@
 #!/usr/bin/env bash
-# Questa simulation for DdrAgentM1 (generated Verilog + file-backed AXI DDR).
-#
-# Prerequisites:
-#   source <repo>/set_env.sh   (questacoreprime)
-#   make questa                  (verilog + sim)
+# Questa simulation for DdrAgent M1 / M2a (generated Verilog + file-backed AXI DDR).
 #
 # Usage:
-#   ./run.sh compile
-#   ./run.sh m1
-#   QUESTA_WAVE=1 ./run.sh m1          # writes work/tb_ddr_agent_m1.wlf
-#   DDR_IMAGE=/path/to.bin ./run.sh m1
+#   ./run.sh compile-m1 | compile-m2a
+#   ./run.sh m1 | m2a
+#   QUESTA_WAVE=1 ./run.sh m2a
 
 set -eo pipefail
 
@@ -29,31 +24,61 @@ if ! command -v vsim >/dev/null 2>&1; then
   exit 1
 fi
 
-GEN_V="$DDR_AGENT_DIR/gen/verilog/DdrAgentM1.v"
-if [[ ! -f "$GEN_V" ]]; then
-  echo "Missing $GEN_V — run: cd $DDR_AGENT_DIR && make verilog" >&2
-  exit 1
-fi
-
-DDR_IMAGE="${DDR_IMAGE:-$REPO_ROOT/tools/ddr_pack/out/ddr_image_m1.bin}"
-DDR_IMAGE="$(cd "$(dirname "$DDR_IMAGE")" && pwd)/$(basename "$DDR_IMAGE")"
-export DDR_IMAGE
-if [[ ! -f "$DDR_IMAGE" ]]; then
-  echo "Missing DDR image $DDR_IMAGE — run: make -C $REPO_ROOT/tools/ddr_pack pack-m1" >&2
-  exit 1
-fi
-
 cd "$SCRIPT_DIR"
 
 case "$MODE" in
-  compile)
+  compile-m1)
+    GEN_V="$DDR_AGENT_DIR/gen/verilog/DdrAgentM1.v"
+    if [[ ! -f "$GEN_V" ]]; then
+      echo "Missing $GEN_V — run: cd $DDR_AGENT_DIR && make verilog-m1" >&2
+      exit 1
+    fi
     vsim -c -do "$SCRIPT_DIR/run_compile.do"
     ;;
+  compile-m2a)
+    GEN_V="$DDR_AGENT_DIR/gen/verilog/DdrAgentM2.v"
+    if [[ ! -f "$GEN_V" ]]; then
+      echo "Missing $GEN_V — run: cd $DDR_AGENT_DIR && make verilog-m2a" >&2
+      exit 1
+    fi
+    vsim -c -do "$SCRIPT_DIR/run_compile_m2a.do"
+    ;;
   m1)
+    GEN_V="$DDR_AGENT_DIR/gen/verilog/DdrAgentM1.v"
+    if [[ ! -f "$GEN_V" ]]; then
+      echo "Missing $GEN_V — run: cd $DDR_AGENT_DIR && make verilog-m1" >&2
+      exit 1
+    fi
+    DDR_IMAGE="${DDR_IMAGE:-$REPO_ROOT/tools/ddr_pack/out/ddr_image_m1.bin}"
+    DDR_IMAGE="$(cd "$(dirname "$DDR_IMAGE")" && pwd)/$(basename "$DDR_IMAGE")"
+    export DDR_IMAGE
+    if [[ ! -f "$DDR_IMAGE" ]]; then
+      echo "Missing DDR image $DDR_IMAGE — run: make -C $REPO_ROOT/tools/ddr_pack pack-m1" >&2
+      exit 1
+    fi
     vsim -c -do "$SCRIPT_DIR/run_m1.do"
     ;;
+  m2a)
+    GEN_V="$DDR_AGENT_DIR/gen/verilog/DdrAgentM2.v"
+    if [[ ! -f "$GEN_V" ]]; then
+      echo "Missing $GEN_V — run: cd $DDR_AGENT_DIR && make verilog-m2a" >&2
+      exit 1
+    fi
+    DDR_IMAGE="${DDR_IMAGE:-$REPO_ROOT/tools/ddr_pack/out/ddr_fixture.bin}"
+    DDR_IMAGE="$(cd "$(dirname "$DDR_IMAGE")" && pwd)/$(basename "$DDR_IMAGE")"
+    export DDR_IMAGE
+    if [[ ! -f "$DDR_IMAGE" ]]; then
+      echo "Missing DDR image $DDR_IMAGE — run: make -C $REPO_ROOT/tools/ddr_pack fixture" >&2
+      exit 1
+    fi
+    vsim -c -do "$SCRIPT_DIR/run_m2a.do"
+    ;;
+  compile)
+    echo "Usage: $0 compile-m1 | compile-m2a (legacy 'compile' -> compile-m1)" >&2
+    exec "$0" compile-m1
+    ;;
   *)
-    echo "Usage: $0 {compile|m1}" >&2
+    echo "Usage: $0 {compile-m1|compile-m2a|m1|m2a}" >&2
     exit 1
     ;;
 esac

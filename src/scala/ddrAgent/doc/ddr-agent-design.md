@@ -152,7 +152,7 @@ AXI R data ──► row_buffer[4096 B] ──► beat_serializer ──► Axi4
 | 阶段 | 内容 | 状态 |
 |:---|:---|:---:|
 | **M1** | `MemCmd`/`MemDone`、`DdrAgentM1`（AXI 读 + embed/gamma stream） | ✓ |
-| **M2** | `GEMV_WEIGHT`、`KV_READ`/`KV_WRITE` | 待做 |
+| **M2** | `GEMV_WEIGHT`（M2a ✓）、`KV_READ`/`KV_WRITE` | KV 待做 |
 | **M3** | `LM_HEAD` 顺序扫描、写通路 | 待做 |
 
 ---

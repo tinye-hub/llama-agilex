@@ -44,7 +44,7 @@ help:
 	@echo "  rmsNorm         verilator, questa"
 	@echo "  gemvService64   verilator, questa"
 	@echo "  ddrAgent        verilator, questa"
-	@echo "  top             verilator, questa"
+	@echo "  top             verilator, questa (M1), questa-m2a (M2a W_Q)"
 	@echo "  llamaScheduler  verilator only"
 	@echo ""
 	@echo "  PARALLEL=$(PARALLEL)  DDR_IMAGE=$(DDR_IMAGE)"

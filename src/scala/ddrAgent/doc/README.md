@@ -11,22 +11,31 @@
 | `../scala/DdrAgentBundles.scala` | `MemCmd`, `MemDone`, `DdrSinkId` |
 | `../scala/DdrAgentAxi.scala` | AXI4 参数（256-bit 主线；仿真可用 64-bit） |
 | `../scala/DdrAgentM1.scala` | 里程碑 1：`MemCmd` → AXI 读 → `embedOut` / `gammaOut` |
+| `../scala/DdrAgentM2.scala` | 里程碑 2a：M1 + `GEMV_WEIGHT` 32 B tile → `weightBeat`（256-bit） |
 | `../test/DdrAgentM1Sim.scala` | Verilator 仿真（官方 `AxiMemorySim` 作 AXI slave） |
-| `../test/questa/` | Questa 仿真（`tb_ddr_agent_m1.sv` + `axi_read_mem.sv`） |
-| `../test/SimDdrImage.scala` | 加载 `ddr_image_m1.bin` |
+| `../test/DdrAgentM2aSim.scala` | Verilator M2a（embed/gamma + W_Q tile） |
+| `../test/questa/` | Questa：`tb_ddr_agent_m1.sv` / `tb_ddr_agent_m2a.sv` + `axi_read_mem.sv` |
+| `../test/SimDdrImage.scala` | 加载 DDR bin（FP16 row + INT4 tile golden） |
 
 由 `top/LlamaM1Top` 例化。
 
 ## 仿真
 
 ```bash
+# M1 — embed + gamma rows
 make -C tools/ddr_pack pack-m1
-make -C src/scala/ddrAgent verilator    # Verilator（彩色 PASS：sbt-runmain.sh）
-make -C src/scala/ddrAgent questa       # Questa (需 set_env.sh + questacoreprime)
+make -C src/scala/ddrAgent verilator          # Verilator DdrAgentM1Sim
+make -C src/scala/ddrAgent questa-m1          # Questa M1（`make questa` 别名）
+
+# M2a — GEMV_WEIGHT 32 B tile @ W_Q(0)
+make -C tools/ddr_pack fixture                  # ddr_fixture.bin（含 4 个 W_Q tile）
+make -C src/scala/ddrAgent verilator-m2a
+make -C src/scala/ddrAgent questa-m2a           # 需 set_env.sh + questacoreprime
 ```
 
-默认 preload：`tools/ddr_pack/out/ddr_image_m1.bin`（可用 `DDR_IMAGE` 覆盖）。  
-Verilator 用 64-bit AXI；Questa / 综合默认 256-bit（`make verilog AXI_WIDTH=256`）。
+M1 preload：`tools/ddr_pack/out/ddr_image_m1.bin`  
+M2a preload：`tools/ddr_pack/out/ddr_fixture.bin`（可用 `DDR_IMAGE` 覆盖）  
+Verilator M1 用 64-bit AXI；M2a / Questa / 综合默认 256-bit（`make verilog-m2a AXI_WIDTH=256`）。
 
 约定：[simulation-conventions.md](../../doc/simulation-conventions.md)
 

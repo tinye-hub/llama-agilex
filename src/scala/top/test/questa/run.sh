@@ -1,17 +1,9 @@
 #!/usr/bin/env bash
-# Questa simulation for LlamaM1Top — AXI4-Lite + DdrAgent + RmsNormAxiTop with real Quartus FP IPs.
-#
-# Prerequisites:
-#   source <repo>/activate.sh        (quartus + questacoreprime)
-#   make verilog (from src/scala/top) → top/gen/verilog/LlamaM1Top.v
-#   make questa                      (or ./run.sh m1)
-#   tools/ddr_pack/out/ddr_image_m1.bin
-#   simlib at simlib/quartus2025_1_1_agilex5_questa2024_3/
+# Questa simulation for LlamaM1Top / LlamaM2aTop.
 #
 # Usage:
-#   ./run.sh compile
-#   ./run.sh m1
-#   QUESTA_WAVE=1 ./run.sh m1      # writes work/tb_llama_m1_top.wlf
+#   ./run.sh compile-m1 | compile-m2a
+#   ./run.sh m1 | m2a
 
 set -eo pipefail
 
@@ -30,31 +22,62 @@ if ! command -v vsim >/dev/null 2>&1; then
   exit 1
 fi
 
-GEN_V="$TOP_DIR/gen/verilog/LlamaM1Top.v"
-if [[ ! -f "$GEN_V" ]]; then
-  echo "Missing $GEN_V — run: cd $TOP_DIR && make verilog" >&2
-  exit 1
-fi
-
-DDR_IMAGE="${DDR_IMAGE:-$REPO_ROOT/tools/ddr_pack/out/ddr_image_m1.bin}"
-DDR_IMAGE="$(cd "$(dirname "$DDR_IMAGE")" && pwd)/$(basename "$DDR_IMAGE")"
-export DDR_IMAGE
-if [[ ! -f "$DDR_IMAGE" ]]; then
-  echo "Missing DDR image $DDR_IMAGE — run: make -C $REPO_ROOT/tools/ddr_pack pack-m1" >&2
-  exit 1
-fi
-
 cd "$SCRIPT_DIR"
 
 case "$MODE" in
-  compile)
+  compile-m1)
+    GEN_V="$TOP_DIR/gen/verilog/LlamaM1Top.v"
+    if [[ ! -f "$GEN_V" ]]; then
+      echo "Missing $GEN_V — run: cd $TOP_DIR && make verilog" >&2
+      exit 1
+    fi
     vsim -c -do "$SCRIPT_DIR/run_compile.do"
     ;;
+  compile-m2a)
+    GEN_V="$TOP_DIR/gen/verilog/LlamaM2aTop.v"
+    if [[ ! -f "$GEN_V" ]]; then
+      echo "Missing $GEN_V — run: cd $TOP_DIR && make verilog-m2a" >&2
+      exit 1
+    fi
+    vsim -c -do "$SCRIPT_DIR/run_compile_m2a.do"
+    ;;
   m1)
+    GEN_V="$TOP_DIR/gen/verilog/LlamaM1Top.v"
+    if [[ ! -f "$GEN_V" ]]; then
+      echo "Missing $GEN_V — run: cd $TOP_DIR && make verilog" >&2
+      exit 1
+    fi
+    DDR_IMAGE="${DDR_IMAGE:-$REPO_ROOT/tools/ddr_pack/out/ddr_image_m1.bin}"
+    DDR_IMAGE="$(cd "$(dirname "$DDR_IMAGE")" && pwd)/$(basename "$DDR_IMAGE")"
+    export DDR_IMAGE
+    if [[ ! -f "$DDR_IMAGE" ]]; then
+      echo "Missing DDR image $DDR_IMAGE — run: make -C $REPO_ROOT/tools/ddr_pack pack-m1" >&2
+      exit 1
+    fi
     vsim -c -do "$SCRIPT_DIR/run_m1.do"
     ;;
+  m2a)
+    GEN_V="$TOP_DIR/gen/verilog/LlamaM2aTop.v"
+    if [[ ! -f "$GEN_V" ]]; then
+      echo "Missing $GEN_V — run: cd $TOP_DIR && make verilog-m2a" >&2
+      exit 1
+    fi
+    DDR_IMAGE="${DDR_IMAGE:-$REPO_ROOT/tools/ddr_pack/out/ddr_image.bin}"
+    DDR_IMAGE="$(cd "$(dirname "$DDR_IMAGE")" && pwd)/$(basename "$DDR_IMAGE")"
+    export DDR_IMAGE
+    if [[ ! -f "$DDR_IMAGE" ]]; then
+      echo "Missing DDR image $DDR_IMAGE — run: make -C $REPO_ROOT/tools/ddr_pack pack" >&2
+      exit 1
+    fi
+    export LLAMA_M2A_DIM="${LLAMA_M2A_DIM:-2048}"
+    export LLAMA_M2A_M="${LLAMA_M2A_M:-2048}"
+    vsim -c -do "$SCRIPT_DIR/run_m2a.do"
+    ;;
+  compile)
+    exec "$0" compile-m1
+    ;;
   *)
-    echo "Usage: $0 {compile|m1}" >&2
+    echo "Usage: $0 {compile-m1|compile-m2a|m1|m2a}" >&2
     exit 1
     ;;
 esac

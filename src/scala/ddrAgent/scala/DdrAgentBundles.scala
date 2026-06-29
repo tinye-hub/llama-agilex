@@ -20,9 +20,11 @@ case class MemDone() extends Bundle {
 }
 
 object DdrSinkId {
-  val embedRow   = 0
-  val rmsGamma   = 1
-  val gemvWeight = 2
+  val embedRow     = 0
+  val rmsGamma     = 1
+  val gemvWeight   = 2
+  /** FP16 scale preload stream → `GemvService64.scaleLoad`. */
+  val scalePreload = 3
 }
 
 object MemCmdType {

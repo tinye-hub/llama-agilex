@@ -39,7 +39,7 @@ nc run -r Taskerlist:b OSREL:RHEL8 RAM/4GB CORES/4 CGROUP:CORES -jpp fastest,pac
 
 | 变量 | 用途 | 行为 |
 |:---|:---|:---|
-| `NC_RUN` | 子模块 `make questa` | `-I` 阻塞，Taskerlist:i 8GB |
+| `NC_RUN` | 子模块 `make questa` / `make quartus` | `-I` 阻塞，Taskerlist:i 32GB |
 | `NC_RUN_BG` | `PARALLEL=1` 矩阵回归 | 无 `-I`，先全部提交再 `nc wait` |
 
 **Verilator batch 注意**：nc SNAPSHOT 会带上登录节点的 `XDG_RUNTIME_DIR=/run/user/<uid>`，batch 节点无法写入，sbt 会报 `AccessDeniedException`。`sim-matrix-job.sh` 在 batch 节点 `/tmp/sm-<hash>/` 建短路径 runtime。

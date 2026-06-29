@@ -198,10 +198,17 @@ submit_questa_jobs() {
     echo "         run: make -C $REPO_ROOT/tools/ddr_pack pack-m1"
     echo ""
   fi
+  local m2a_ddr="$REPO_ROOT/tools/ddr_pack/out/ddr_image.bin"
+  if [[ ! -f "$m2a_ddr" ]]; then
+    echo "WARNING: missing $m2a_ddr (top questa-m2a)"
+    echo "         run: make -C $REPO_ROOT/tools/ddr_pack pack"
+    echo ""
+  fi
   submit_nc_bg rmsNorm questa questa
   submit_nc_bg gemvService64 questa questa
   submit_nc_bg ddrAgent questa questa
   submit_nc_bg top questa questa
+  submit_nc_bg top questa-m2a questa-m2a
   record llamaScheduler questa SKIP "no Questa TB"
 }
 
@@ -330,10 +337,17 @@ run_questa_suite_serial() {
     echo "         run: make -C $REPO_ROOT/tools/ddr_pack pack-m1"
     echo ""
   fi
+  local m2a_ddr="$REPO_ROOT/tools/ddr_pack/out/ddr_image.bin"
+  if [[ ! -f "$m2a_ddr" ]]; then
+    echo "WARNING: missing $m2a_ddr (top questa-m2a)"
+    echo "         run: make -C $REPO_ROOT/tools/ddr_pack pack"
+    echo ""
+  fi
   run_make_serial rmsNorm questa questa
   run_make_serial gemvService64 questa questa
   run_make_serial ddrAgent questa questa
   run_make_serial top questa questa
+  run_make_serial top questa-m2a questa-m2a
   record llamaScheduler questa SKIP "no Questa TB"
 }
 
