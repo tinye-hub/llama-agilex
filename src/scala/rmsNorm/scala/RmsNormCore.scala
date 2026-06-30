@@ -104,10 +104,11 @@ class RmsNormCore(
     }
   }
 
+  // 1-cycle pipe: break fp16 convert → sqrSum DSP timing path.
   val sqrSumIn = Flow(Fragment(Bits(32 bits)))
-  sqrSumIn.valid    := toBeNormFp32.valid
-  sqrSumIn.fragment := toBeNormFp32.payload
-  sqrSumIn.last     := sqrLast
+  sqrSumIn.valid    := RegNext(toBeNormFp32.valid) init (False)
+  sqrSumIn.fragment := RegNext(toBeNormFp32.payload)
+  sqrSumIn.last     := RegNextWhen(sqrLast, toBeNormFp32.valid) init (False)
 
   val sqrSumOut = sqrSum_func(sqrSumIn)
 
@@ -148,22 +149,39 @@ class RmsNormCore(
   val emitActive = state === State.EMIT
   val emitLast   = outIdx === U(dim - 1, addrWidth bits)
 
-  val emitBeatValid = emitActive && dataFifo.io.pop.valid && weightFifo.io.pop.valid
+  // 1-cycle emit pipe: break dataFifo BRAM read → fp32 convert timing path.
+  val fifoPopFire = emitActive && dataFifo.io.pop.valid && weightFifo.io.pop.valid
+  dataFifo.io.pop.ready   := fifoPopFire
+  weightFifo.io.pop.ready := fifoPopFire
+
+  val emitBeatValid = RegNext(fifoPopFire) init (False)
+  val emitDataReg   = Reg(Bits(16 bits))
+  val emitWeightReg = Reg(Bits(16 bits))
+  when(fifoPopFire) {
+    emitDataReg   := dataFifo.io.pop.payload
+    emitWeightReg := weightFifo.io.pop.payload
+  }
 
   val inputRaw = Flow(Bits(16 bits))
   inputRaw.valid   := emitBeatValid
-  inputRaw.payload := dataFifo.io.pop.payload
+  inputRaw.payload := emitDataReg
 
   val weightRaw = Flow(Bits(16 bits))
   weightRaw.valid   := emitBeatValid
-  weightRaw.payload := weightFifo.io.pop.payload
-
-  dataFifo.io.pop.ready   := emitBeatValid
-  weightFifo.io.pop.ready := emitBeatValid
+  weightRaw.payload := emitWeightReg
 
   val inputFp32 = toFp32_func(inputRaw)
   val gammaFp32 = toFp32_func(weightRaw)
-  val scaledOut = mul_func(inputFp32, gammaFp32)
+
+  // 1-cycle pipe: break fp16 convert → mul DSP timing path (dataFifo BRAM read side).
+  val scaledIn = Flow(Bits(32 bits))
+  val scaledGamma = Flow(Bits(32 bits))
+  scaledIn.valid    := RegNext(inputFp32.valid) init (False)
+  scaledIn.payload  := RegNext(inputFp32.payload)
+  scaledGamma.valid   := RegNext(gammaFp32.valid) init (False)
+  scaledGamma.payload := RegNext(gammaFp32.payload)
+
+  val scaledOut = mul_func(scaledIn, scaledGamma)
 
   val rsqrtFlow = Flow(Bits(32 bits))
   rsqrtFlow.valid   := scaleLockValid && emitActive

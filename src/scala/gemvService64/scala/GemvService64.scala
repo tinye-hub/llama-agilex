@@ -86,7 +86,22 @@ class GemvService64(
   actStream.payload := actInData
   actBuf.io.actIn   << actStream
 
-  scaleR.io.loadIn  << io.scaleLoad
+  // 1-cycle scaleLoad pipe: breaks ddrAgent scaleOut → ScaleRam BRAM write timing path.
+  val scaleStream = Stream(Bits(g.fp16Width bits))
+  val scaleInValid = RegInit(False)
+  val scaleInData  = Reg(Bits(g.fp16Width bits))
+  io.scaleLoad.ready := !scaleInValid || scaleStream.ready
+  val scaleInFire   = scaleInValid && scaleStream.ready
+  val scaleStageFire = io.scaleLoad.valid && (!scaleInValid || scaleStream.ready)
+  when(scaleStageFire) {
+    scaleInValid := True
+    scaleInData  := io.scaleLoad.payload
+  }.elsewhen(scaleInFire) {
+    scaleInValid := False
+  }
+  scaleStream.valid   := scaleInValid
+  scaleStream.payload := scaleInData
+  scaleR.io.loadIn    << scaleStream
 
   // ---------------------------------------------------------------------------
   // Job registers + FSM
@@ -173,15 +188,26 @@ class GemvService64(
     (tCmp >> log2Up(g.tilesPerGroup)).resize(grpIdxW)
   scaleR.io.groupIndex := groupIndex.resized
 
-  // 1-cycle MAC beat delay: beatFire latches addr/weight; macBeatEn consumes registered actBuf read.
-  val macBeatEn = RegNext(beatFire, False)
+  // 2-cycle MAC beat delay: beatFire → registered actBuf read → aligned weight/scale.
+  val beatFireR = RegNext(beatFire, False)
+  val macBeatEn = RegNext(beatFireR, False)
+  val wWideStage   = Reg(Bits(g.tileFp16Width bits))
+  val scaleFp16Stage = Reg(Bits(g.fp16Width bits))
+  val beatLastStage  = Reg(Bool())
+  val xWideR    = Reg(Bits(g.tileFp16Width bits))
   val wWideR    = Reg(Bits(g.tileFp16Width bits))
   val scaleFp16R = Reg(Bits(g.fp16Width bits))
   val beatLastR = Reg(Bool())
   when(beatFire) {
-    wWideR     := unpack.io.wWide
-    scaleFp16R := scaleR.io.scaleFp16
-    beatLastR  := tCmpLast
+    wWideStage     := unpack.io.wWide
+    scaleFp16Stage := scaleR.io.scaleFp16
+    beatLastStage  := tCmpLast
+  }
+  when(beatFireR) {
+    xWideR       := actBuf.io.tileData
+    wWideR       := wWideStage
+    scaleFp16R   := scaleFp16Stage
+    beatLastR    := beatLastStage
   }
 
   val scaleRaw = Flow(Bits(g.fp16Width bits))
@@ -190,7 +216,7 @@ class GemvService64(
   val scaleFp32 = toFp32_func(scaleRaw)
 
   mac.io.beatValid := macBeatEn
-  mac.io.xWide     := actBuf.io.tileData
+  mac.io.xWide     := xWideR
   mac.io.wWide     := wWideR
   mac.io.scaleFp32 := scaleFp32.payload
   mac.io.beatLast  := beatLastR

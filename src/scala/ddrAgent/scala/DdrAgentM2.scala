@@ -65,6 +65,10 @@ class DdrAgentM2(axiCfg: Axi4Config = DdrAgentAxi.config()) extends Component {
   val cmdPop = cmdFifo.io.pop
   cmdPop.ready := False
 
+  // 1-cycle cmd pipe: break cmdFifo BRAM read → job register timing path.
+  val cmdLoadValid = RegInit(False)
+  val cmdLoad      = Reg(MemCmd())
+
   io.axi.aw.valid := False
   io.axi.aw.payload.assignDontCare()
   io.axi.w.valid  := False
@@ -90,17 +94,21 @@ class DdrAgentM2(axiCfg: Axi4Config = DdrAgentAxi.config()) extends Component {
 
   switch(state) {
     is(State.IDLE) {
-      when(cmdPop.valid) {
-        cmdPop.ready := True
-        ddrAddr    := cmdPop.payload.ddrAddr
-        byteLen    := cmdPop.payload.byteLen
-        sinkId     := cmdPop.payload.sinkId
-        tag        := cmdPop.payload.tag
-        axisCtx    := cmdPop.payload.axisCtx
+      when(cmdLoadValid) {
+        ddrAddr    := cmdLoad.ddrAddr
+        byteLen    := cmdLoad.byteLen
+        sinkId     := cmdLoad.sinkId
+        tag        := cmdLoad.tag
+        axisCtx    := cmdLoad.axisCtx
         bytesRead  := 0
-        burstAddr  := cmdPop.payload.ddrAddr
+        burstAddr  := cmdLoad.ddrAddr
         outBeat    := 0
+        cmdLoadValid := False
         state := State.AXI_AR
+      }.elsewhen(cmdPop.valid) {
+        cmdPop.ready := True
+        cmdLoad      := cmdPop.payload
+        cmdLoadValid := True
       }
     }
 
@@ -220,13 +228,19 @@ class DdrAgentM2(axiCfg: Axi4Config = DdrAgentAxi.config()) extends Component {
   io.scaleOut.valid := scaleOutValid
   io.scaleOut.payload := scaleOutData
 
-  val scaleInValid   = streamValidRow && isScale
+  // 1-cycle scale pipe: break rowBuf BRAM read → scaleOut register timing path.
+  val scaleStreamDataR = Reg(Bits(16 bits))
+  when(streamValidRow && isScale) {
+    scaleStreamDataR := streamData
+  }
+
+  val scaleInValid   = RegNext(streamValidRow && isScale, False)
   val scaleOutFire   = scaleOutValid && io.scaleOut.ready
   val scaleOutReadyR = RegNext(io.scaleOut.ready, True)
   val scaleStageFire = scaleInValid && (!scaleOutValid || scaleOutReadyR)
   when(scaleStageFire) {
     scaleOutValid := True
-    scaleOutData  := streamData
+    scaleOutData  := scaleStreamDataR
   }.elsewhen(scaleOutFire) {
     scaleOutValid := False
   }

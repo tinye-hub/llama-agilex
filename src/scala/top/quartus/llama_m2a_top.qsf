@@ -34,6 +34,11 @@ set_global_assignment -name VERILOG_FILE ../gen/verilog/LlamaM2aTop.v
 # io_ddrAxi remains unconstrained to board EMIF (DDR controller not integrated yet).
 set_instance_assignment -name VIRTUAL_PIN ON -to * -entity LlamaM2aTop
 
+# Timing closure: prioritize Fmax for the final marginal routing-dominated path
+# (gemv actBuf BRAM read -> FP DSP mult input). Synthesis/fitter directive only;
+# does not alter generated Verilog, so functional behavior is unchanged.
+set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
+
 set_global_assignment -name FLOW_ENABLE_POWER_ANALYZER ON
 set_global_assignment -name SDC_FILE constraints/llama_m2a_top.sdc
 set_global_assignment -name POWER_TJ_VALUE 100

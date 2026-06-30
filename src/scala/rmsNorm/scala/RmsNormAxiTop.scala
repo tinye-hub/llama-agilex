@@ -57,15 +57,36 @@ class RmsNormAxiTop(
 
   val core = new RmsNormCore(g, toFp32_func, toFp16_func, mul_func, sqrSum_func, add_func, rsqrt_func)
 
+  // 1-cycle input pipes: break ddrAgent → collect/sqrSum and gamma → weight timing paths.
   val dataStream = Stream(Bits(16 bits))
-  dataStream.valid   := io.dataIn.valid
-  dataStream.payload := io.dataIn.payload.data
-  io.dataIn.ready    := dataStream.ready
+  val dataInValid = RegInit(False)
+  val dataInData  = Reg(Bits(16 bits))
+  io.dataIn.ready := !dataInValid || dataStream.ready
+  val dataInFire   = dataInValid && dataStream.ready
+  val dataStageFire = io.dataIn.valid && (!dataInValid || dataStream.ready)
+  when(dataStageFire) {
+    dataInValid := True
+    dataInData  := io.dataIn.payload.data
+  }.elsewhen(dataInFire) {
+    dataInValid := False
+  }
+  dataStream.valid   := dataInValid
+  dataStream.payload := dataInData
 
   val weightStream = Stream(Bits(16 bits))
-  weightStream.valid   := io.weightIn.valid
-  weightStream.payload := io.weightIn.payload.data
-  io.weightIn.ready    := weightStream.ready
+  val weightInValid = RegInit(False)
+  val weightInData  = Reg(Bits(16 bits))
+  io.weightIn.ready := !weightInValid || weightStream.ready
+  val weightInFire   = weightInValid && weightStream.ready
+  val weightStageFire = io.weightIn.valid && (!weightInValid || weightStream.ready)
+  when(weightStageFire) {
+    weightInValid := True
+    weightInData  := io.weightIn.payload.data
+  }.elsewhen(weightInFire) {
+    weightInValid := False
+  }
+  weightStream.valid   := weightInValid
+  weightStream.payload := weightInData
 
   core.io.dataIn   << dataStream
   core.io.weightIn << weightStream
