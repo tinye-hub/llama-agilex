@@ -6,7 +6,7 @@
 |:---|:---|:---|
 | `make questa` | Questa + Quartus 真实 FP IP（或纯 RTL） | FP16/FP32 golden、握手、FSM、端到端数据路径 |
 
-含 FP 黑盒的模块（`rmsNorm`、`top`、`gemvService64` 等）须 **Questa 毕业**。见 `.cursor/rules/questa-simulation.mdc`。
+含 FP 黑盒的模块（`rmsNorm`、`rope`、`top`、`gemvService64` 等）须 **Questa 毕业**。见 `.cursor/rules/questa-simulation.mdc`。
 
 ## 全模块回归（`src/scala/Makefile`）
 
@@ -24,7 +24,7 @@ make regression      # 全矩阵并行 nc（= make questa PARALLEL=1）
 
 ```bash
 cd src/scala
-make regression           # 推荐：6 job 并行（Questa）
+make regression           # 推荐：7 job 并行（Questa）
 make questa PARALLEL=1
 ```
 
@@ -70,6 +70,7 @@ Questa TB 在 SV 里用 `$display("\033[32m********** PASS **********\033[0m")`�
 |:---|:---|
 | `rmsNorm/` | `make questa` |
 | `gemvService64/` | `make questa` |
+| `rope/` | `make questa`（SerialRoPEAxiTop，默认 `ROPE_MAX_POS=1024`） |
 | `ddrAgent/` | `make questa`（M1+M2a 串行） |
 | `top/` | `make questa`（M1）、`questa-m2a`（M2a W_Q） |
 | `llamaScheduler/` | `make questa`（M1 单元 TB） |
@@ -78,7 +79,7 @@ Questa TB 在 SV 里用 `$display("\033[32m********** PASS **********\033[0m")`�
 
 | # | 模块 | 目标 | 说明 |
 |:---:|:---|:---|:---|
-| 1–6 | rmsNorm, gemvService64, ddrAgent, top×2, llamaScheduler | `questa` / `questa-m2a` | 6 个并行 nc job |
+| 1–7 | rmsNorm, gemvService64, rope, ddrAgent, top×2, llamaScheduler | `questa` / `questa-m2a` | 7 个并行 nc job |
 
 `top questa-m2a` 在 batch 中默认 `LLAMA_M2A_M=4`（smoke，全 K=2048）；本地完整 M 可 `make questa-m2a M=2048`。
 

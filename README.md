@@ -8,7 +8,7 @@ Llama 3.2 1B on Intel Agilex 5 — SpinalHDL PL + HPS (GHRD).
 |:---|:---|:---:|
 | **M1** | embed → RMSNorm L0 norm1 | ✓ |
 | **M2a** | GemvService64 + L0 `W_Q` | ✓ Questa 毕业 |
-| **M2b** | RoPE | 待做 |
+| **M2b** | RoPE | 进行中（单元 Questa ✓，Quartus 时序 ✓ @400MHz） |
 | **M2c** | Incremental GQA + KV cache | 待做 |
 | **M2d** | `W_O` + residual | 待做 |
 
@@ -26,7 +26,7 @@ make -C tools/ddr_pack pack-m1          # M1 镜像
 make -C tools/ddr_pack pack             # M2a 全量镜像（含 INT4 W_Q）
 
 cd src/scala
-make regression                         # 6 项并行 nc 回归（Questa，推荐）
+make regression                         # 7 项并行 nc 回归（Questa，推荐）
 # 或单项：
 cd src/scala/top && make questa         # M1 FP 毕业（Questa）
 cd src/scala/top && make questa-m2a     # M2a 毕业
@@ -44,5 +44,6 @@ cd src/scala/llamaScheduler && make questa  # Scheduler 单元 TB
 | DDR 地址 | [src/scala/ddrMemoryMap/doc/ddr-memory-map.md](src/scala/ddrMemoryMap/doc/ddr-memory-map.md) |
 | RmsNorm | [src/scala/rmsNorm/doc/rms-norm-module-design.md](src/scala/rmsNorm/doc/rms-norm-module-design.md) |
 | 架构背景 | [doc/llama3.2-1b-arch-for-fpga-design.md](doc/llama3.2-1b-arch-for-fpga-design.md) |
+| RoPE (M2b) | [src/scala/rope/doc/rope-m2b-design.md](src/scala/rope/doc/rope-m2b-design.md) |
 | Questa 策略 | [.cursor/rules/questa-simulation.mdc](.cursor/rules/questa-simulation.mdc) |
 | 仿真约定 | [src/scala/doc/simulation-conventions.md](src/scala/doc/simulation-conventions.md) |

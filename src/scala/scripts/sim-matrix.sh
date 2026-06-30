@@ -208,6 +208,7 @@ submit_nc_bg() {
   local mod="$1" make_target="$2" display_target="$3"
   local log="$LOG_DIR/${mod}-${display_target}.log"
   local jobname="sim-matrix-${mod}-${display_target}"
+  jobname="${jobname//\//-}"
   local out jid
 
   echo "nc bg: $mod make $make_target"
@@ -248,6 +249,7 @@ submit_questa_jobs() {
   fi
   submit_nc_bg rmsNorm questa questa
   submit_nc_bg gemvService64 questa questa
+  submit_nc_bg rope questa questa
   submit_nc_bg ddrAgent questa questa
   submit_nc_bg top questa questa
   submit_nc_bg top questa-m2a questa-m2a
@@ -375,6 +377,7 @@ run_questa_suite_serial() {
   fi
   run_make_serial rmsNorm questa questa
   run_make_serial gemvService64 questa questa
+  run_make_serial rope questa questa
   run_make_serial ddrAgent questa questa
   run_make_serial top questa questa
   run_make_serial top questa-m2a questa-m2a
