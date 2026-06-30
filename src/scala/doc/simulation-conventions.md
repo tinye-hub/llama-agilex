@@ -74,12 +74,13 @@ Questa TB 在 SV 里用 `$display("\033[32m********** PASS **********\033[0m")`�
 | `ddrAgent/` | `make questa`（M1+M2a 串行） |
 | `top/` | `make questa`（M1）、`questa-m2a`（M2a W_Q） |
 | `llamaScheduler/` | `make questa`（M1 单元 TB） |
+| `attention/softmax/` | `make questa`（SerialSafeSoftmaxAxiTop，默认 `SOFTMAX_CASE=len16`） |
 
 ### 全矩阵回归（`make regression`）
 
 | # | 模块 | 目标 | 说明 |
 |:---:|:---|:---|:---|
-| 1–7 | rmsNorm, gemvService64, rope, ddrAgent, top×2, llamaScheduler | `questa` / `questa-m2a` | 7 个并行 nc job |
+| 1–8 | rmsNorm, gemvService64, rope, ddrAgent, top×2, llamaScheduler, attention/softmax | `questa` / `questa-m2a` / `softmax` | 8 个并行 nc job |
 
 `top questa-m2a` 在 batch 中默认 `LLAMA_M2A_M=4`（smoke，全 K=2048）；本地完整 M 可 `make questa-m2a M=2048`。
 

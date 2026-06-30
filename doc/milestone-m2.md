@@ -31,7 +31,7 @@ M2d   W_O 投影 + residual add
 |:---|:---|:---|:---|:---|
 | **M2a** | RMSNorm 2048 FP16 | Q（L0 W_Q，K=M 可 smoke） | `GemvService64`、`DdrAgentM2`、`SchedulerM2a` | `gemvService64/make questa` + `top/make questa-m2a` | ✓ |
 | **M2b** | Q、K + `seq_pos` | RoPE(Q)、RoPE(K) | `SerialRoPE`、RoPE 表 | `rope/make questa` |
-| **M2c** | RoPE Q/K、V、KV cache | per-head attn out（2048 维前） | `GqaAttention`、KV sink | `attention/make questa` |
+| **M2c** | RoPE Q/K、V、KV cache | per-head attn out（2048 维前） | `GqaAttention`、KV sink | `attention/softmax/make questa` |
 | **M2d** | concat heads | attn 子层输出 + residual | `W_O` GEMV、`ResidualAdd` | `top/make questa-m2d` |
 
 ---

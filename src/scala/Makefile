@@ -19,7 +19,7 @@ export PATH := $(SCRIPTS):$(PATH)
 export DDR_IMAGE
 export PARALLEL
 
-MODULES := rmsNorm gemvService64 rope ddrAgent top llamaScheduler ddrMemoryMap
+MODULES := rmsNorm gemvService64 rope ddrAgent top llamaScheduler ddrMemoryMap attention
 
 .PHONY: all help questa regression clean clean-modules clean-scala clean-logs
 
@@ -43,6 +43,7 @@ help:
 	@echo "  ddrAgent        questa"
 	@echo "  top             questa (M1), questa-m2a (M2a W_Q)"
 	@echo "  llamaScheduler  questa"
+	@echo "  attention/softmax  questa (SerialSafeSoftmax)"
 	@echo ""
 	@echo "  PARALLEL=$(PARALLEL)  DDR_IMAGE=$(DDR_IMAGE)"
 	@echo "  regression sources ../../activate.sh if needed"

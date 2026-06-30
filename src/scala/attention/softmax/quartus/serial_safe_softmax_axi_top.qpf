@@ -1,0 +1,13 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 2026  Intel Corporation. All rights reserved.
+#
+# SerialSafeSoftmax stand-alone Quartus project (synthesis / fit / STA only).
+#
+# -------------------------------------------------------------------------- #
+
+QUARTUS_VERSION = "25.1.1"
+DATE            = "2026.06.30"
+
+PROJECT_REVISION = "serial_safe_softmax_axi_top"
+PROJECT_OUTPUT_DIRECTORY = output_files

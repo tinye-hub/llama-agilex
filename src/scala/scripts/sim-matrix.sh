@@ -254,6 +254,7 @@ submit_questa_jobs() {
   submit_nc_bg top questa questa
   submit_nc_bg top questa-m2a questa-m2a
   submit_nc_bg llamaScheduler questa questa
+  submit_nc_bg attention/softmax questa softmax
 }
 
 wait_nc_jobs() {
@@ -382,6 +383,7 @@ run_questa_suite_serial() {
   run_make_serial top questa questa
   run_make_serial top questa-m2a questa-m2a
   run_make_serial llamaScheduler questa questa
+  run_make_serial attention/softmax questa softmax
 }
 
 print_summary() {
