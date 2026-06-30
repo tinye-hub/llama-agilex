@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<simPackage>
+ <file
+   path="altera_fp_functions_19110/sim/fp32Div_altera_fp_functions_19110_etcsazy_memoryC0_uid146_invTables_lutmem.hex"
+   type="HEX"
+   library="altera_fp_functions_19110" />
+ <file
+   path="altera_fp_functions_19110/sim/fp32Div_altera_fp_functions_19110_etcsazy_memoryC1_uid149_invTables_lutmem.hex"
+   type="HEX"
+   library="altera_fp_functions_19110" />
+ <file
+   path="altera_fp_functions_19110/sim/fp32Div_altera_fp_functions_19110_etcsazy_memoryC2_uid152_invTables_lutmem.hex"
+   type="HEX"
+   library="altera_fp_functions_19110" />
+ <file
+   path="altera_fp_functions_19110/sim/dspba_library_ver.sv"
+   type="SYSTEM_VERILOG"
+   library="altera_fp_functions_19110" />
+ <file
+   path="altera_fp_functions_19110/sim/fp32Div_altera_fp_functions_19110_etcsazy.sv"
+   type="SYSTEM_VERILOG"
+   library="altera_fp_functions_19110" />
+ <file
+   path="sim/fp32Div.v"
+   type="VERILOG"
+   library="fp32Div"
+   hasInlineConfiguration="true" />
+ <topLevel name="fp32Div.fp32Div" />
+ <deviceFamily name="agilex5" />
+ <device name="A5EB013BB23BE4SCS" />
+</simPackage>

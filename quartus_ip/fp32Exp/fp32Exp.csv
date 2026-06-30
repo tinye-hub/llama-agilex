@@ -1,0 +1,22 @@
+# system info fp32Exp on 2026.06.30.04:11:14
+system_info:
+name,value
+DEVICE,A5EB013BB23BE4SCS
+DEVICE_FAMILY,Agilex 5
+GENERATION_ID,0
+#
+#
+# Files generated for fp32Exp on 2026.06.30.04:11:14
+files:
+filepath,kind,attributes,module,is_top
+sim/fp32Exp.v,VERILOG,CONTAINS_INLINE_CONFIGURATION,fp32Exp,true
+altera_fp_functions_19110/sim/fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_kPPreZHigh_uid63_fpExpETest_lutmem.hex,HEX,,fp32Exp_altera_fp_functions_19110_fz7lzha,false
+altera_fp_functions_19110/sim/fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_kPPreZLow_uid67_fpExpETest_lutmem.hex,HEX,,fp32Exp_altera_fp_functions_19110_fz7lzha,false
+altera_fp_functions_19110/sim/fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_eA_uid100_fpExpETest_lutmem.hex,HEX,,fp32Exp_altera_fp_functions_19110_fz7lzha,false
+altera_fp_functions_19110/sim/dspba_library_ver.sv,SYSTEM_VERILOG,,fp32Exp_altera_fp_functions_19110_fz7lzha,false
+altera_fp_functions_19110/sim/fp32Exp_altera_fp_functions_19110_fz7lzha.sv,SYSTEM_VERILOG,,fp32Exp_altera_fp_functions_19110_fz7lzha,false
+#
+# Map from instance-path to kind of module
+instances:
+instancePath,module
+fp32Exp.fp_functions_0,fp32Exp_altera_fp_functions_19110_fz7lzha

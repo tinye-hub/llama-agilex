@@ -1,0 +1,57 @@
+# Repository paths for util FP IP Questa smoke test.
+
+if {![info exists env(UTIL_QUESTA_DIR)] || $env(UTIL_QUESTA_DIR) eq ""} {
+    echo "ERROR: UTIL_QUESTA_DIR not set — run via test/questa/run.sh"
+    exit 1
+}
+set QUESTA_DIR [file normalize $env(UTIL_QUESTA_DIR)]
+set UTIL_TEST_DIR [file dirname $QUESTA_DIR]
+set UTIL_DIR [file normalize [file dirname $UTIL_TEST_DIR]]
+set SCALA_ROOT [file normalize [file join $UTIL_DIR ..]]
+set REPO_ROOT [file normalize [file join $UTIL_DIR ../../..]]
+
+set SIMLIB_DIR [file join $REPO_ROOT simlib quartus2025_1_1_agilex5_questa2024_3]
+set QUARTUS_IP_DIR [file join $REPO_ROOT quartus_ip]
+set GEN_VERILOG_DIR [file join $UTIL_DIR gen verilog]
+set GEN_TOP_V [file join $GEN_VERILOG_DIR Fp32ExpDivSmokeTop.v]
+set WORK_DIR [file join $QUESTA_DIR work]
+
+if {![file exists $SIMLIB_DIR/questa_device_mapping.tcl]} {
+    echo "ERROR: missing simlib at $SIMLIB_DIR"
+    exit 1
+}
+if {![file exists $GEN_TOP_V]} {
+    echo "ERROR: missing $GEN_TOP_V — run: make verilog (from src/scala/util)"
+    exit 1
+}
+
+file mkdir $WORK_DIR
+cd $WORK_DIR
+
+source [file join $SCALA_ROOT scripts compile_altera_fp_ips.tcl]
+
+link_fp_ip_hex_mems $WORK_DIR fp32Exp [list \
+    fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_eA_uid100_fpExpETest_lutmem.hex \
+    fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_kPPreZLow_uid67_fpExpETest_lutmem.hex \
+    fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_kPPreZHigh_uid63_fpExpETest_lutmem.hex \
+]
+
+link_fp_ip_hex_mems $WORK_DIR fp32Div [list \
+    fp32Div_altera_fp_functions_19110_etcsazy_memoryC0_uid146_invTables_lutmem.hex \
+    fp32Div_altera_fp_functions_19110_etcsazy_memoryC1_uid149_invTables_lutmem.hex \
+    fp32Div_altera_fp_functions_19110_etcsazy_memoryC2_uid152_invTables_lutmem.hex \
+]
+
+source $SIMLIB_DIR/questa_device_mapping.tcl
+set _simlib_libs [file join $SIMLIB_DIR libs]
+foreach _vlib {
+    lpm_ver sgate_ver altera_ver altera_mf_ver altera_lnsim_ver
+    tennm_ver tennm_hvio_ver tennm_sm_hps_ver tennm_sm4_hssi_ver
+    tennm_fmm3_hssi_ver tennm_revb_hvio_ver tennm_revb_io96_ver
+    tennm_agilex5_io96_ver tennm_agilex5_hssi_a_ver
+} {
+    vmap $_vlib [file join $_simlib_libs $_vlib]
+}
+unset _simlib_libs _vlib
+
+set ::env(UTIL_QUESTA_WORK) $WORK_DIR

@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<deploy
+ date="2026.06.30.04:11:18"
+ outputDirectory="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/">
+ <perimeter>
+  <parameter
+     name="AUTO_GENERATION_ID"
+     type="Integer"
+     defaultValue="0"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_UNIQUE_ID"
+     type="String"
+     defaultValue=""
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_FAMILY"
+     type="String"
+     defaultValue="Agilex 5"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE"
+     type="String"
+     defaultValue="A5EB013BB23BE4SCS"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_SPEEDGRADE"
+     type="String"
+     defaultValue="4"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_BOARD"
+     type="String"
+     defaultValue="default"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CLK_CLOCK_RATE"
+     type="Long"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CLK_CLOCK_DOMAIN"
+     type="Integer"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CLK_RESET_DOMAIN"
+     type="Integer"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <interface name="clk" kind="clock" start="0">
+   <property name="clockRate" value="0" />
+   <property name="externallyDriven" value="false" />
+   <property name="ptfSchematicName" value="" />
+   <port name="clk" direction="input" role="clk" width="1" />
+  </interface>
+  <interface name="areset" kind="reset" start="0">
+   <property name="associatedClock" value="clk" />
+   <property name="synchronousEdges" value="DEASSERT" />
+   <port name="areset" direction="input" role="reset" width="1" />
+  </interface>
+  <interface name="en" kind="conduit" start="0">
+   <property name="associatedClock" value="clk" />
+   <property name="associatedReset" value="" />
+   <property name="prSafe" value="false" />
+   <port name="en" direction="input" role="en" width="1" />
+  </interface>
+  <interface name="a" kind="conduit" start="0">
+   <property name="associatedClock" value="clk" />
+   <property name="associatedReset" value="areset" />
+   <property name="prSafe" value="false" />
+   <port name="a" direction="input" role="a" width="32" />
+  </interface>
+  <interface name="q" kind="conduit" start="0">
+   <property name="associatedClock" value="clk" />
+   <property name="associatedReset" value="" />
+   <property name="prSafe" value="false" />
+   <port name="q" direction="output" role="q" width="32" />
+  </interface>
+ </perimeter>
+ <entity kind="fp32Exp" version="1.0" name="fp32Exp">
+  <parameter name="AUTO_CLK_CLOCK_RATE" value="-1" />
+  <parameter name="AUTO_GENERATION_ID" value="0" />
+  <parameter name="AUTO_DEVICE" value="A5EB013BB23BE4SCS" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Agilex 5" />
+  <parameter name="AUTO_BOARD" value="default" />
+  <parameter name="AUTO_CLK_RESET_DOMAIN" value="-1" />
+  <parameter name="AUTO_CLK_CLOCK_DOMAIN" value="-1" />
+  <parameter name="AUTO_UNIQUE_ID" value="" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="4" />
+  <generatedFiles>
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/synth/fp32Exp.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/synth/fp32Exp.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp.ip" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/ip/altera/dsp/altera_fp_functions/source/altera_fp_hw.tcl" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcmodel.components.hwtclvalidator.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcmodel.components.tclelement.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopc.generator.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.ddmwriter.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcdocument.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.hdlwriter.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcmodel.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.qsys.common.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.intel.shared.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jacl1.3.2a.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/commons-text-1.10.0.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/commons-lang3-3.12.0.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/guava-32.0.1-jre.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jfreechart-1.5.0.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/miglayout-swing-5.2.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/docking-frames-common-1.1.2_20c.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/bare-bones-browser-launch-3.2.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jaxb-api.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jaxb-jxc.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jaxb-runtime.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jaxb-xjc.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/codemodel.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/dtd-parser.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/FastInfoset.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/istack-commons-runtime.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/istack-commons-tools.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/javax.activation-api.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/relaxng-datatype.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/rngom.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/stax-ex.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/txw2.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/xsom.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/failureaccess-1.0.1.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jsr305-3.0.2.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/checker-qual-3.33.0.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/j2objc-annotations-2.8.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/miglayout-core-5.2.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/docking-frames-core-1.1.2_20c.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.qsys.model.common.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.privateinterfaces.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.qsys.ipxact.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/antlr4-runtime-4.7.2.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopclibrary.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcmodel.atlantic.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.qsys.ipxact.module.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.intel.quartus.dni.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcreport.build.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcreport.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopc.qsymbol.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcmodel.transforms.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.qsys.hypericonnect.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.qsys.cmsis.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.hdlcomponent.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.tcl.interpreter.jar" />
+  </childSourceFiles>
+  <messages>
+   <message level="Info" culprit="fp32Exp">"Generating: fp32Exp"</message>
+   <message level="Info" culprit="fp32Exp">"Generating: fp32Exp_altera_fp_functions_19110_fz7lzha"</message>
+   <message level="Info" culprit="fp_functions_0">/applicsqum/altera/quartus/pro_25_1_1/ip/altera/dsp/altera_fp_functions/source//cmdPolyEval.sh /applicsqum/altera/quartus/pro_25_1_1/quartus/dspba/backend/linux64 -target Agilex5 -frequency 400 -name fp32Exp_altera_fp_functions_19110_fz7lzha -noChanValid -enable -enableHardFP 1 -printMachineReadable -preserveEntityName -lang VHDL -speedgrade 4 FPExp 8 23</message>
+   <message level="Info" culprit="fp_functions_0">Latency on Agilex 5 is 31 cycles</message>
+   <message level="Info" culprit="fp_functions_0">DSP Blocks Used: 12</message>
+   <message level="Info" culprit="fp_functions_0">LUTs Used: 590</message>
+   <message level="Info" culprit="fp_functions_0">Memory Bits Used: 32768</message>
+   <message level="Info" culprit="fp_functions_0">Memory Blocks Used: 3</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_fp_functions"
+   version="19.1.10"
+   name="fp32Exp_altera_fp_functions_19110_fz7lzha">
+  <parameter name="fp_man" value="23" />
+  <parameter name="gen_enable" value="true" />
+  <parameter name="fp_exp_derived" value="8" />
+  <parameter name="use_rounding_mode" value="false" />
+  <parameter name="fp_in_exp" value="8" />
+  <parameter name="validation_failed" value="false" />
+  <parameter name="fxpt_width" value="32" />
+  <parameter name="manual_dsp_planning" value="true" />
+  <parameter name="force_elaborate" value="0" />
+  <parameter name="EXP_LOG_function" value="EXPE" />
+  <parameter name="fp_format" value="custom" />
+  <parameter name="fp_out_man_derived" value="8" />
+  <parameter name="latency_target" value="2" />
+  <parameter name="frequency_target" value="400" />
+  <parameter name="number_of_inputs" value="2" />
+  <parameter name="fp_in_format" value="single" />
+  <parameter name="select_signal_enable" value="false" />
+  <parameter name="derivedfunction" value="EXPE" />
+  <parameter name="scale_by_pi" value="false" />
+  <parameter name="TRIG_function" value="SIN" />
+  <parameter name="performance_goal" value="frequency" />
+  <parameter name="frequency_feedback" value="0" />
+  <parameter name="fp_out_man" value="23" />
+  <parameter
+     name="rounding_mode_derived"
+     value="nearest with tie breaking away from zero" />
+  <parameter name="fp_in_man_derived" value="8" />
+  <parameter name="faithful_rounding" value="false" />
+  <parameter name="rounding_mode" value="nearest with tie breaking away from zero" />
+  <parameter name="fp_man_derived" value="23" />
+  <parameter name="fp_in_man" value="23" />
+  <parameter name="selected_device_family" value="Agilex 5" />
+  <parameter name="fp_exp" value="8" />
+  <parameter name="fp_out_exp_derived" value="8" />
+  <parameter name="ALL_function" value="ADD" />
+  <parameter name="trig_no_range_reduction" value="false" />
+  <parameter name="divide_type" value="0" />
+  <parameter name="forceRegisters" value="1111" />
+  <parameter name="enable_hard_fp" value="true" />
+  <parameter name="ARITH_function" value="ADD" />
+  <parameter name="fp_out_format" value="single" />
+  <parameter name="fxpt_fraction" value="0" />
+  <parameter name="fxpt_sign" value="1" />
+  <parameter name="selected_device_part" value="A5EB013BB23BE4SCS" />
+  <parameter name="selected_device_speedgrade" value="4" />
+  <parameter name="CONVERT_function" value="FXP_FP" />
+  <parameter name="report_resources_to_xml" value="false" />
+  <parameter name="latency_feedback" value="31" />
+  <parameter name="fp_in_exp_derived" value="8" />
+  <parameter name="COMPARE_function" value="MIN" />
+  <parameter name="FUNCTION_FAMILY" value="EXP_LOG" />
+  <parameter name="fp_out_exp" value="8" />
+  <parameter name="ROOTS_function" value="SQRT" />
+  <parameter name="exponent_width" value="23" />
+  <generatedFiles>
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/altera_fp_functions_19110/synth/fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_kPPreZHigh_uid63_fpExpETest_lutmem.hex"
+       attributes="" />
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/altera_fp_functions_19110/synth/fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_kPPreZLow_uid67_fpExpETest_lutmem.hex"
+       attributes="" />
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/altera_fp_functions_19110/synth/fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_eA_uid100_fpExpETest_lutmem.hex"
+       attributes="" />
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/altera_fp_functions_19110/synth/dspba_library_package.vhd"
+       attributes="" />
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/altera_fp_functions_19110/synth/dspba_library.vhd"
+       attributes="" />
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/altera_fp_functions_19110/synth/fp32Exp_altera_fp_functions_19110_fz7lzha.vhd"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/altera_fp_functions_19110/synth/fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_kPPreZHigh_uid63_fpExpETest_lutmem.hex"
+       attributes="" />
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/altera_fp_functions_19110/synth/fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_kPPreZLow_uid67_fpExpETest_lutmem.hex"
+       attributes="" />
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/altera_fp_functions_19110/synth/fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_eA_uid100_fpExpETest_lutmem.hex"
+       attributes="" />
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/altera_fp_functions_19110/synth/dspba_library_package.vhd"
+       attributes="" />
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/altera_fp_functions_19110/synth/dspba_library.vhd"
+       attributes="" />
+   <file
+       path="/userworkqum/tinye/llama-agilex/quartus_ip/fp32Exp/altera_fp_functions_19110/synth/fp32Exp_altera_fp_functions_19110_fz7lzha.vhd"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/ip/altera/dsp/altera_fp_functions/source/altera_fp_hw.tcl" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcmodel.components.hwtclvalidator.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcmodel.components.tclelement.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopc.generator.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.ddmwriter.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcdocument.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.hdlwriter.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcmodel.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.qsys.common.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.intel.shared.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jacl1.3.2a.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/commons-text-1.10.0.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/commons-lang3-3.12.0.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/guava-32.0.1-jre.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jfreechart-1.5.0.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/miglayout-swing-5.2.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/docking-frames-common-1.1.2_20c.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/bare-bones-browser-launch-3.2.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jaxb-api.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jaxb-jxc.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jaxb-runtime.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jaxb-xjc.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/codemodel.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/dtd-parser.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/FastInfoset.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/istack-commons-runtime.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/istack-commons-tools.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/javax.activation-api.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/relaxng-datatype.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/rngom.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/stax-ex.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/txw2.jar" />
+   <file path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/xsom.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/failureaccess-1.0.1.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/jsr305-3.0.2.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/checker-qual-3.33.0.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/j2objc-annotations-2.8.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/miglayout-core-5.2.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/docking-frames-core-1.1.2_20c.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.qsys.model.common.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.privateinterfaces.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.qsys.ipxact.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/antlr4-runtime-4.7.2.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopclibrary.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcmodel.atlantic.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.qsys.ipxact.module.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.intel.quartus.dni.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcreport.build.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcreport.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopc.qsymbol.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.sopcmodel.transforms.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.qsys.hypericonnect.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.qsys.cmsis.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.hdlcomponent.jar" />
+   <file
+       path="/applicsqum/altera/quartus/pro_25_1_1/qsys/lib/com.altera.tcl.interpreter.jar" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="fp32Exp" as="fp_functions_0" />
+  <messages>
+   <message level="Info" culprit="fp32Exp">"Generating: fp32Exp_altera_fp_functions_19110_fz7lzha"</message>
+   <message level="Info" culprit="fp_functions_0">/applicsqum/altera/quartus/pro_25_1_1/ip/altera/dsp/altera_fp_functions/source//cmdPolyEval.sh /applicsqum/altera/quartus/pro_25_1_1/quartus/dspba/backend/linux64 -target Agilex5 -frequency 400 -name fp32Exp_altera_fp_functions_19110_fz7lzha -noChanValid -enable -enableHardFP 1 -printMachineReadable -preserveEntityName -lang VHDL -speedgrade 4 FPExp 8 23</message>
+   <message level="Info" culprit="fp_functions_0">Latency on Agilex 5 is 31 cycles</message>
+   <message level="Info" culprit="fp_functions_0">DSP Blocks Used: 12</message>
+   <message level="Info" culprit="fp_functions_0">LUTs Used: 590</message>
+   <message level="Info" culprit="fp_functions_0">Memory Bits Used: 32768</message>
+   <message level="Info" culprit="fp_functions_0">Memory Blocks Used: 3</message>
+  </messages>
+ </entity>
+</deploy>

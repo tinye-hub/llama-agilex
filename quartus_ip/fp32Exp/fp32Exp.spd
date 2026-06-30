@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<simPackage>
+ <file
+   path="altera_fp_functions_19110/sim/fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_kPPreZHigh_uid63_fpExpETest_lutmem.hex"
+   type="HEX"
+   library="altera_fp_functions_19110" />
+ <file
+   path="altera_fp_functions_19110/sim/fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_kPPreZLow_uid67_fpExpETest_lutmem.hex"
+   type="HEX"
+   library="altera_fp_functions_19110" />
+ <file
+   path="altera_fp_functions_19110/sim/fp32Exp_altera_fp_functions_19110_fz7lzha_floatTable_eA_uid100_fpExpETest_lutmem.hex"
+   type="HEX"
+   library="altera_fp_functions_19110" />
+ <file
+   path="altera_fp_functions_19110/sim/dspba_library_ver.sv"
+   type="SYSTEM_VERILOG"
+   library="altera_fp_functions_19110" />
+ <file
+   path="altera_fp_functions_19110/sim/fp32Exp_altera_fp_functions_19110_fz7lzha.sv"
+   type="SYSTEM_VERILOG"
+   library="altera_fp_functions_19110" />
+ <file
+   path="sim/fp32Exp.v"
+   type="VERILOG"
+   library="fp32Exp"
+   hasInlineConfiguration="true" />
+ <topLevel name="fp32Exp.fp32Exp" />
+ <deviceFamily name="agilex5" />
+ <device name="A5EB013BB23BE4SCS" />
+</simPackage>

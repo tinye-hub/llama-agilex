@@ -60,6 +60,64 @@ class FpFunctionsUnaryAdapter(
 }
 
 /**
+ * Wraps [[IntelFpFunctionsBinaryBlackBox]] with Spinal `Flow` valid/payload semantics.
+ *
+ * Same `en`/operand-hold rules as [[FpFunctionsUnaryAdapter]]: for `latency > 0`, tie `en` high
+ * and hold `a`/`b` across idle cycles.
+ */
+class FpFunctionsBinaryAdapter(
+  val ipName:       String,
+  val latency:      Int,
+  val inputWidth:   Int,
+  val outputWidth:  Int,
+  val ipResultShim: Int = 0
+) extends Component {
+
+  val io = new Bundle {
+    val a = slave(Flow(Bits(inputWidth bits)))
+    val b = slave(Flow(Bits(inputWidth bits)))
+    val r = master(Flow(Bits(outputWidth bits)))
+  }
+
+  val ip = new IntelFpFunctionsBinaryBlackBox(ipName, inputWidth, outputWidth)
+
+  val aHeld = Reg(Bits(inputWidth bits)) init (B(0, inputWidth bits))
+  val bHeld = Reg(Bits(inputWidth bits)) init (B(0, inputWidth bits))
+  when(io.a.valid) {
+    aHeld := io.a.payload
+  }
+  when(io.b.valid) {
+    bHeld := io.b.payload
+  }
+  val operandA = Mux(io.a.valid, io.a.payload, aHeld)
+  val operandB = Mux(io.b.valid, io.b.payload, bHeld)
+
+  if (latency > 0) {
+    ip.io.en := B"1"
+    ip.io.a  := operandA
+    ip.io.b  := operandB
+  } else {
+    val fire = io.a.valid && io.b.valid
+    ip.io.en := fire.asBits
+    ip.io.a  := io.a.payload
+    ip.io.b  := io.b.payload
+  }
+
+  val fire = io.a.valid && io.b.valid
+  if (latency == 0) {
+    io.r.valid   := fire
+    io.r.payload := ip.io.q
+  } else {
+    io.r.valid := Delay(fire, latency, init = False)
+    if (ipResultShim == 0) {
+      io.r.payload := ip.io.q
+    } else {
+      io.r.payload := Delay(ip.io.q, ipResultShim)
+    }
+  }
+}
+
+/**
  * FP32 multiply via [[IntelFpMultAccBlackBox]] with `accumulate = 0`.
  */
 class FpMultAccMulAdapter(

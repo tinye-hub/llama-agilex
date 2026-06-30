@@ -6,11 +6,11 @@ import spinal.lib._
 import scala.language.postfixOps
 
 /**
- * BlackBox for unary Quartus `altera_fp_functions` IPs (fp16ToFp32, fp32ToFp16, fp32Rsqrt, fp32Exp).
+ * BlackBox for binary Quartus `altera_fp_functions` IPs (e.g. `fp32Div`).
  *
- * Port names match [[quartus_ip]] `*_bb.v` shells.
+ * Port names match [[quartus_ip]] `*_bb.v` shells (`a` = left / dividend, `b` = right / divisor).
  */
-class IntelFpFunctionsBlackBox(
+class IntelFpFunctionsBinaryBlackBox(
   val ipName:      String,
   val inputWidth:  Int,
   val outputWidth: Int
@@ -21,6 +21,7 @@ class IntelFpFunctionsBlackBox(
     val areset = in Bool()
     val en     = in Bits(1 bits)
     val a      = in Bits(inputWidth bits)
+    val b      = in Bits(inputWidth bits)
     val q      = out Bits(outputWidth bits)
   }
 

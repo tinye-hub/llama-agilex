@@ -13,6 +13,8 @@ import scala.language.postfixOps
  * | fp16ToFp32          | fp16ToFp32     | 0  | altera_fp_functions |
  * | fp32ToFp16          | fp32ToFp16     | 2  | altera_fp_functions |
  * | fp32Rsqrt           | fp32Rsqrt      | 14 | altera_fp_functions |
+ * | fp32Exp             | fp32Exp        | 31 | altera_fp_functions |
+ * | fp32Div             | fp32Div        | 30 | altera_fp_functions |
  * | fp32MultAcc         | fp32MultAcc    | 5  | native FP DSP |
  * | fp32Add             | fp32Add        | 3  | native FP DSP |
  *
@@ -74,6 +76,31 @@ object fp32Rsqrt {
     val ip = new IntelFloatIPFlowIOSim(latency, 1, 32, 32)
     ip.io.a << a
   }.ip.io.r
+}
+
+object fp32Exp {
+
+  val ipName  = "fp32Exp"
+  /** Agilex 5 latency from `quartus_ip/fp32Exp/fp32Exp_generation.rpt`. */
+  val latency = 31
+
+  def exp(a: Flow[Bits]): Flow[Bits] = new Composite(a, "exp") {
+    val adp = new FpFunctionsUnaryAdapter(ipName, latency, 32, 32)
+    adp.io.a << a
+  }.adp.io.r
+}
+
+object fp32Div {
+
+  val ipName  = "fp32Div"
+  /** Agilex 5 latency from `quartus_ip/fp32Div/fp32Div_generation.rpt`. */
+  val latency = 30
+
+  def div(a: Flow[Bits], b: Flow[Bits]): Flow[Bits] = new Composite(a, "div") {
+    val adp = new FpFunctionsBinaryAdapter(ipName, latency, 32, 32)
+    adp.io.a << a
+    adp.io.b << b
+  }.adp.io.r
 }
 
 object fp32MultAcc {

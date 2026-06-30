@@ -1,0 +1,22 @@
+# system info fp32Div on 2026.06.30.04:21:21
+system_info:
+name,value
+DEVICE,A5EB013BB23BE4SCS
+DEVICE_FAMILY,Agilex 5
+GENERATION_ID,0
+#
+#
+# Files generated for fp32Div on 2026.06.30.04:21:21
+files:
+filepath,kind,attributes,module,is_top
+sim/fp32Div.v,VERILOG,CONTAINS_INLINE_CONFIGURATION,fp32Div,true
+altera_fp_functions_19110/sim/fp32Div_altera_fp_functions_19110_etcsazy_memoryC0_uid146_invTables_lutmem.hex,HEX,,fp32Div_altera_fp_functions_19110_etcsazy,false
+altera_fp_functions_19110/sim/fp32Div_altera_fp_functions_19110_etcsazy_memoryC1_uid149_invTables_lutmem.hex,HEX,,fp32Div_altera_fp_functions_19110_etcsazy,false
+altera_fp_functions_19110/sim/fp32Div_altera_fp_functions_19110_etcsazy_memoryC2_uid152_invTables_lutmem.hex,HEX,,fp32Div_altera_fp_functions_19110_etcsazy,false
+altera_fp_functions_19110/sim/dspba_library_ver.sv,SYSTEM_VERILOG,,fp32Div_altera_fp_functions_19110_etcsazy,false
+altera_fp_functions_19110/sim/fp32Div_altera_fp_functions_19110_etcsazy.sv,SYSTEM_VERILOG,,fp32Div_altera_fp_functions_19110_etcsazy,false
+#
+# Map from instance-path to kind of module
+instances:
+instancePath,module
+fp32Div.fp_functions_0,fp32Div_altera_fp_functions_19110_etcsazy
